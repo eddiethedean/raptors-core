@@ -3,8 +3,8 @@
 //! This module provides fancy indexing (integer array indexing),
 //! equivalent to NumPy's fancy indexing functionality
 
-use crate::array::{Array, ArrayError};
-use crate::types::{DType, NpyType};
+use crate::array::Array;
+use crate::types::NpyType;
 use crate::indexing::IndexError;
 
 /// Fancy index an array using an index array
@@ -24,7 +24,6 @@ pub fn fancy_index_array(array: &Array, indices: &Array) -> Result<Array, IndexE
     }
     
     let array_shape = array.shape();
-    let array_size = array.size();
     let index_size = indices.size();
     
     // Handle negative indices and validate bounds

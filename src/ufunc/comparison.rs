@@ -2,7 +2,7 @@
 //!
 //! This module provides comparison ufunc implementations
 
-use crate::ufunc::{Ufunc, LoopFunction};
+use crate::ufunc::Ufunc;
 use crate::ufunc::loops::{equal_loop_double, less_loop_double};
 use crate::types::NpyType;
 

@@ -3,11 +3,17 @@
 //! This module provides additional C API functions beyond the basic ones in mod.rs
 
 use super::PyArrayObject;
+use super::conversion;
 use libc::{c_int, c_void, size_t};
+use crate::{empty, zeros, ones, types::{DType, NpyType}};
 
 /// Get the number of dimensions of an array
 ///
 /// Equivalent to NumPy's PyArray_NDIM macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_NDIM(arr: *mut PyArrayObject) -> c_int {
     if arr.is_null() {
@@ -22,6 +28,10 @@ pub extern "C" fn PyArray_NDIM(arr: *mut PyArrayObject) -> c_int {
 /// Get the size of a specific dimension
 ///
 /// Equivalent to NumPy's PyArray_DIM macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_DIM(arr: *mut PyArrayObject, idim: c_int) -> i64 {
     if arr.is_null() || idim < 0 {
@@ -42,6 +52,10 @@ pub extern "C" fn PyArray_DIM(arr: *mut PyArrayObject, idim: c_int) -> i64 {
 /// Get the stride of a specific dimension
 ///
 /// Equivalent to NumPy's PyArray_STRIDE macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_STRIDE(arr: *mut PyArrayObject, istride: c_int) -> i64 {
     if arr.is_null() || istride < 0 {
@@ -62,6 +76,10 @@ pub extern "C" fn PyArray_STRIDE(arr: *mut PyArrayObject, istride: c_int) -> i64
 /// Get the data pointer of an array
 ///
 /// Equivalent to NumPy's PyArray_DATA macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_DATA(arr: *mut PyArrayObject) -> *mut c_void {
     if arr.is_null() {
@@ -76,25 +94,45 @@ pub extern "C" fn PyArray_DATA(arr: *mut PyArrayObject) -> *mut c_void {
 /// Get the item size in bytes
 ///
 /// Equivalent to NumPy's PyArray_ITEMSIZE macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_ITEMSIZE(arr: *mut PyArrayObject) -> size_t {
     if arr.is_null() {
         return 0;
     }
     
-    // For now, we'll need to compute this from the dtype
-    // In a full implementation, we'd have proper dtype access
-    // This is a placeholder that assumes we can get itemsize from the array
     unsafe {
-        // TODO: Get actual itemsize from descriptor
-        // For now, return 8 as a default (double)
-        8
+        // For now, try to infer itemsize from the array
+        // If data is null (empty array), we can't convert, so infer from type
+        let arr_ref = &*arr;
+        if arr_ref.data.is_null() {
+            // Empty array - infer from type_num or use default
+            // In full implementation, would check descriptor
+            return 8; // Default to double
+        }
+        
+        // Try to convert to Array to get itemsize
+        match conversion::pyarray_to_array_view(arr) {
+            Ok(array) => array.itemsize() as size_t,
+            Err(_) => {
+                // Fallback: infer from type_num or use default
+                // For now, return 8 as default (double)
+                8
+            }
+        }
     }
 }
 
 /// Get pointer to dimensions array
 ///
 /// Equivalent to NumPy's PyArray_DIMS macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_DIMS(arr: *mut PyArrayObject) -> *const i64 {
     if arr.is_null() {
@@ -109,6 +147,10 @@ pub extern "C" fn PyArray_DIMS(arr: *mut PyArrayObject) -> *const i64 {
 /// Get pointer to strides array
 ///
 /// Equivalent to NumPy's PyArray_STRIDES macro/function
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_STRIDES(arr: *mut PyArrayObject) -> *const i64 {
     if arr.is_null() {
@@ -124,6 +166,10 @@ pub extern "C" fn PyArray_STRIDES(arr: *mut PyArrayObject) -> *const i64 {
 ///
 /// Equivalent to NumPy's PyArray_Empty function
 /// Creates an array with uninitialized memory
+///
+/// # Safety
+/// The caller must ensure `dims` is a valid pointer to an array of at least `_nd` elements
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_Empty(
     _nd: c_int,
@@ -131,26 +177,14 @@ pub extern "C" fn PyArray_Empty(
     type_num: c_int,
     _is_f_order: c_int,
 ) -> *mut PyArrayObject {
-    use crate::{empty, types::{DType, NpyType}};
-    
     if dims.is_null() || _nd <= 0 || _nd > 64 {
         return std::ptr::null_mut();
     }
     
     // Convert type_num to NpyType (simplified - only handles basic types)
-    let npy_type = match type_num {
-        0 => NpyType::Bool,
-        1 => NpyType::Byte,
-        2 => NpyType::UByte,
-        3 => NpyType::Short,
-        4 => NpyType::UShort,
-        5 => NpyType::Int,
-        6 => NpyType::UInt,
-        7 => NpyType::Long,
-        8 => NpyType::ULong,
-        11 => NpyType::Float,
-        12 => NpyType::Double,
-        _ => return std::ptr::null_mut(), // Unsupported type
+    let npy_type = match conversion::type_num_to_npytype(type_num) {
+        Some(t) => t,
+        None => return std::ptr::null_mut(),
     };
     
     let dtype = DType::new(npy_type);
@@ -165,10 +199,10 @@ pub extern "C" fn PyArray_Empty(
     
     match empty(shape, dtype) {
         Ok(array) => {
-            // Convert to PyArrayObject - this is unsafe and leaks memory
-            // In a real implementation, we'd need proper memory management
-            // For now, this is a placeholder
-            std::ptr::null_mut()
+            // Convert to PyArrayObject
+            unsafe {
+                conversion::array_to_pyarray_ptr(&array)
+            }
         }
         Err(_) => std::ptr::null_mut(),
     }
@@ -177,6 +211,10 @@ pub extern "C" fn PyArray_Empty(
 /// Create a zero-filled array (C API)
 ///
 /// Equivalent to NumPy's PyArray_Zeros function
+///
+/// # Safety
+/// The caller must ensure `dims` is a valid pointer to an array of at least `_nd` elements
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_Zeros(
     _nd: c_int,
@@ -184,26 +222,14 @@ pub extern "C" fn PyArray_Zeros(
     type_num: c_int,
     _is_f_order: c_int,
 ) -> *mut PyArrayObject {
-    use crate::{zeros, types::{DType, NpyType}};
-    
     if dims.is_null() || _nd <= 0 || _nd > 64 {
         return std::ptr::null_mut();
     }
     
     // Convert type_num to NpyType
-    let npy_type = match type_num {
-        0 => NpyType::Bool,
-        1 => NpyType::Byte,
-        2 => NpyType::UByte,
-        3 => NpyType::Short,
-        4 => NpyType::UShort,
-        5 => NpyType::Int,
-        6 => NpyType::UInt,
-        7 => NpyType::Long,
-        8 => NpyType::ULong,
-        11 => NpyType::Float,
-        12 => NpyType::Double,
-        _ => return std::ptr::null_mut(),
+    let npy_type = match conversion::type_num_to_npytype(type_num) {
+        Some(t) => t,
+        None => return std::ptr::null_mut(),
     };
     
     let dtype = DType::new(npy_type);
@@ -217,9 +243,11 @@ pub extern "C" fn PyArray_Zeros(
     }
     
     match zeros(shape, dtype) {
-        Ok(_array) => {
-            // TODO: Convert Array to PyArrayObject with proper memory management
-            std::ptr::null_mut()
+        Ok(array) => {
+            // Convert to PyArrayObject
+            unsafe {
+                conversion::array_to_pyarray_ptr(&array)
+            }
         }
         Err(_) => std::ptr::null_mut(),
     }
@@ -228,6 +256,10 @@ pub extern "C" fn PyArray_Zeros(
 /// Create a one-filled array (C API)
 ///
 /// Equivalent to NumPy's PyArray_Ones function
+///
+/// # Safety
+/// The caller must ensure `dims` is a valid pointer to an array of at least `_nd` elements
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_Ones(
     _nd: c_int,
@@ -235,26 +267,14 @@ pub extern "C" fn PyArray_Ones(
     type_num: c_int,
     _is_f_order: c_int,
 ) -> *mut PyArrayObject {
-    use crate::{ones, types::{DType, NpyType}};
-    
     if dims.is_null() || _nd <= 0 || _nd > 64 {
         return std::ptr::null_mut();
     }
     
     // Convert type_num to NpyType
-    let npy_type = match type_num {
-        0 => NpyType::Bool,
-        1 => NpyType::Byte,
-        2 => NpyType::UByte,
-        3 => NpyType::Short,
-        4 => NpyType::UShort,
-        5 => NpyType::Int,
-        6 => NpyType::UInt,
-        7 => NpyType::Long,
-        8 => NpyType::ULong,
-        11 => NpyType::Float,
-        12 => NpyType::Double,
-        _ => return std::ptr::null_mut(),
+    let npy_type = match conversion::type_num_to_npytype(type_num) {
+        Some(t) => t,
+        None => return std::ptr::null_mut(),
     };
     
     let dtype = DType::new(npy_type);
@@ -268,12 +288,52 @@ pub extern "C" fn PyArray_Ones(
     }
     
     match ones(shape, dtype) {
-        Ok(_array) => {
-            // TODO: Convert Array to PyArrayObject with proper memory management
-            std::ptr::null_mut()
+        Ok(array) => {
+            // Convert to PyArrayObject
+            unsafe {
+                conversion::array_to_pyarray_ptr(&array)
+            }
         }
         Err(_) => std::ptr::null_mut(),
     }
+}
+
+/// Create array from descriptor
+///
+/// Equivalent to NumPy's PyArray_NewFromDescr function.
+///
+/// # Safety
+/// The caller must ensure `_descr` is a valid descriptor pointer (simplified - not fully implemented).
+/// The caller must ensure `_dimensions` points to an array of at least `_nd` elements if not null.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+#[no_mangle]
+pub extern "C" fn PyArray_NewFromDescr(
+    _subtype: *mut c_void,
+    _descr: *mut c_void, // Descriptor (simplified - not used yet)
+    _nd: c_int,
+    _dimensions: *const i64,
+    _strides: *const i64,
+    _data: *mut c_void,
+    _flags: c_int,
+    _obj: *mut c_void,
+) -> *mut PyArrayObject {
+    // For now, simplified implementation - use type_num from descriptor if available
+    // Full implementation would parse the descriptor properly
+    // For now, default to Double type
+    let type_num = 12; // Double
+    
+    // Use PyArray_New with default type (from mod.rs)
+    super::PyArray_New(
+        _subtype,
+        _nd,
+        _dimensions,
+        type_num,
+        _strides,
+        _data,
+        8, // itemsize for double
+        _flags,
+        _obj,
+    )
 }
 
 /// Check if object is exactly an array type
@@ -288,4 +348,3 @@ pub extern "C" fn PyArray_CheckExact(op: *mut c_void) -> c_int {
     }
     0
 }
-

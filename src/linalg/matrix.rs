@@ -3,7 +3,6 @@
 //! This module provides matrix multiplication and dot product operations
 
 use crate::array::{Array, ArrayError};
-use crate::types::DType;
 
 /// Linear algebra error
 #[derive(Debug, Clone)]

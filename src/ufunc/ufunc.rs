@@ -3,8 +3,7 @@
 //! This module provides the core ufunc structure and registration system,
 //! equivalent to NumPy's ufunc_object.c
 
-use crate::array::Array;
-use crate::types::{DType, NpyType};
+use crate::types::NpyType;
 use crate::conversion::{promote_types, PromotionError};
 use std::collections::HashMap;
 

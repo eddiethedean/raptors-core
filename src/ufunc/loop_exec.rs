@@ -4,9 +4,8 @@
 //! integrating with iterators and broadcasting
 
 use crate::array::Array;
-use crate::iterators::ArrayIterator;
-use crate::broadcasting::{broadcast_shapes, broadcast_strides, BroadcastError};
-use crate::types::{DType, NpyType};
+use crate::broadcasting::{broadcast_shapes, BroadcastError};
+use crate::types::NpyType;
 use crate::ufunc::{Ufunc, UfuncError, LoopFunction, UnaryLoopFunction};
 
 /// Loop execution error
@@ -164,7 +163,7 @@ pub fn create_ufunc_loop(
     // Get loop function (simplified - would need proper dispatch)
     // For now, use double precision as default
     let loop_fn = ufunc.get_loop(&input_types)
-        .ok_or_else(|| LoopExecutionError::UfuncError(UfuncError::UnsupportedType))?;
+        .ok_or(LoopExecutionError::UfuncError(UfuncError::UnsupportedType))?;
     
     execute_ufunc_loop(ufunc, inputs, output, loop_fn)
 }
@@ -182,8 +181,8 @@ pub fn create_unary_ufunc_loop(
     let input_types = vec![input_type];
     
     // Get unary loop function
-    let loop_fn = ufunc.get_unary_loop(&input_types)
-        .ok_or_else(|| LoopExecutionError::UfuncError(UfuncError::UnsupportedType))?;
+      let loop_fn = ufunc.get_unary_loop(&input_types)
+        .ok_or(LoopExecutionError::UfuncError(UfuncError::UnsupportedType))?;
     
     execute_unary_ufunc_loop(ufunc, input, output, loop_fn)
 }

@@ -4,7 +4,7 @@
 //! equivalent to NumPy's reduction.c
 
 use crate::array::{Array, ArrayError};
-use crate::types::{DType, NpyType};
+use crate::types::NpyType;
 
 /// Reduction error
 #[derive(Debug, Clone)]

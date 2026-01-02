@@ -75,6 +75,8 @@ impl DType {
             NpyType::CDouble => (16, 8, "complex128".to_string()),
             NpyType::CLongDouble => (32, 16, "complex256".to_string()),
             NpyType::Half => (2, 2, "float16".to_string()),
+            NpyType::String => (1, 1, "string".to_string()), // Variable length, default to 1
+            NpyType::Unicode => (4, 4, "unicode".to_string()), // Variable length, default to 4 bytes per char
             _ => (8, 8, "object".to_string()), // Default for unimplemented types
         };
         
@@ -104,6 +106,19 @@ impl DType {
     /// Get the base type
     pub fn type_(&self) -> NpyType {
         self.type_
+    }
+    
+    /// Create a string dtype with custom itemsize
+    /// 
+    /// This is used for fixed-width string arrays where all strings
+    /// have the same maximum width
+    pub fn string_with_itemsize(itemsize: usize) -> Self {
+        DType {
+            type_: NpyType::String,
+            itemsize,
+            align: 1,
+            name: format!("string{}", itemsize),
+        }
     }
 }
 

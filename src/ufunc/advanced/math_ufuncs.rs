@@ -2,7 +2,7 @@
 //!
 //! This module provides constructors for advanced mathematical ufuncs
 
-use crate::ufunc::{Ufunc, UnaryLoopFunction};
+use crate::ufunc::Ufunc;
 use crate::ufunc::advanced::math_loops::*;
 use crate::types::NpyType;
 

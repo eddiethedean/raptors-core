@@ -3,7 +3,6 @@
 //! This module provides unary loop implementations for mathematical functions,
 //! equivalent to NumPy's loops_unary_fp.dispatch.c.src and loops_trigonometric.dispatch.cpp
 
-use crate::types::NpyType;
 
 // Trigonometric functions - Double precision
 

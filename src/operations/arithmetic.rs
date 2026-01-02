@@ -4,7 +4,7 @@
 
 use crate::array::{Array, ArrayError};
 use crate::broadcasting::broadcast_shapes;
-use crate::types::{DType, NpyType};
+use crate::types::NpyType;
 use crate::conversion::promote_dtypes;
 
 /// Add two arrays

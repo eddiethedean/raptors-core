@@ -5,5 +5,7 @@
 
 mod iterator;
 
+pub mod advanced;
+
 pub use iterator::*;
 

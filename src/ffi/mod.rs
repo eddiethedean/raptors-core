@@ -5,9 +5,25 @@
 
 mod array_api;
 mod conversion;
+mod views;
+mod manipulation;
+mod indexing;
+mod concatenation;
+mod sorting;
+mod linalg;
+mod io;
+mod operations;
 
 pub use array_api::*;
 pub use conversion::*;
+pub use views::*;
+pub use manipulation::*;
+pub use indexing::*;
+pub use concatenation::*;
+pub use sorting::*;
+pub use linalg::*;
+pub use io::*;
+pub use operations::*;
 
 use libc::{c_int, c_void, size_t};
 
@@ -42,7 +58,11 @@ pub struct PyArrayObject {
 /// Array creation function
 ///
 /// Creates a new array with the specified parameters.
-/// This is a placeholder that will be expanded as we implement more functionality.
+///
+/// # Safety
+/// The caller must ensure `_dimensions` points to an array of at least `_nd` elements if not null.
+/// The caller must ensure `_strides` points to an array of at least `_nd` elements if not null.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_New(
     _subtype: *mut c_void,
@@ -55,13 +75,50 @@ pub extern "C" fn PyArray_New(
     _flags: c_int,
     _obj: *mut c_void,
 ) -> *mut PyArrayObject {
-    // TODO: Implement full PyArray_New functionality
-    std::ptr::null_mut()
+    use crate::{empty, types::DType};
+    
+    // Ignore unused parameters for now
+    let _ = (_subtype, _strides, _data, _flags, _obj);
+    
+    if _dimensions.is_null() || _nd <= 0 || _nd > 64 {
+        return std::ptr::null_mut();
+    }
+    
+    // Convert type_num to NpyType
+    let npy_type = match conversion::type_num_to_npytype(_type_num) {
+        Some(t) => t,
+        None => return std::ptr::null_mut(),
+    };
+    
+    let dtype = DType::new(npy_type);
+    
+    // Build shape vector
+    let mut shape = Vec::with_capacity(_nd as usize);
+    unsafe {
+        for i in 0..(_nd as usize) {
+            shape.push(*_dimensions.add(i));
+        }
+    }
+    
+    // Create array
+    match empty(shape, dtype) {
+        Ok(array) => {
+            // Convert to PyArrayObject
+            unsafe {
+                conversion::array_to_pyarray_ptr(&array)
+            }
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 /// Get array size
 ///
 /// Returns the total number of elements in the array.
+///
+/// # Safety
+/// The caller must ensure `arr` is a valid pointer to a PyArrayObject
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn PyArray_SIZE(arr: *mut PyArrayObject) -> size_t {
     if arr.is_null() {
@@ -81,13 +138,22 @@ pub extern "C" fn PyArray_SIZE(arr: *mut PyArrayObject) -> size_t {
 }
 
 /// Check if object is an array
+///
+/// Equivalent to NumPy's PyArray_Check function.
+/// Checks if the object is a PyArrayObject (or subclass).
+///
+/// # Safety
+/// The caller must ensure `op` is a valid pointer if not null.
 #[no_mangle]
 pub extern "C" fn PyArray_Check(op: *mut c_void) -> c_int {
     // Simplified check - in real implementation would check object type
+    // For now, check if pointer is not null and could be a PyArrayObject
     if op.is_null() {
         return 0;
     }
-    // TODO: Implement proper type checking
-    0
+    // TODO: Implement proper type checking by examining object structure
+    // For now, assume non-null pointer could be an array
+    // In full implementation, would check ob_type or similar
+    1 // Assume it's an array if not null (simplified)
 }
 

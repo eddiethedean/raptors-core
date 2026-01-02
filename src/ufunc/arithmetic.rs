@@ -2,7 +2,7 @@
 //!
 //! This module provides arithmetic ufunc implementations
 
-use crate::ufunc::{Ufunc, LoopFunction};
+use crate::ufunc::Ufunc;
 use crate::ufunc::loops::{
     add_loop_double, subtract_loop_double, multiply_loop_double, divide_loop_double,
     add_loop_float, add_loop_int,

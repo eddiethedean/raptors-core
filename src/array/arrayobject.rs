@@ -42,8 +42,16 @@ impl Array {
         let size = shape.iter().product::<i64>() as usize;
         let data_size = size * itemsize;
         
+        // Use dtype alignment, but ensure it's valid for Layout (power of 2)
+        // For strings with non-power-of-2 itemsize, use alignment of 1
+        let dtype_align = dtype.align();
+        let layout_align = if dtype_align.is_power_of_two() && dtype_align > 0 {
+            dtype_align
+        } else {
+            1 // Default to byte-aligned
+        };
         let data = unsafe {
-            let layout = std::alloc::Layout::from_size_align(data_size, itemsize)
+            let layout = std::alloc::Layout::from_size_align(data_size, layout_align)
                 .map_err(|_| ArrayError::InvalidLayout)?;
             std::alloc::alloc(layout) as *mut u8
         };
@@ -215,8 +223,15 @@ impl Drop for Array {
     fn drop(&mut self) {
         if self.owns_data && !self.data.is_null() {
             let size = self.size() * self.itemsize;
+            // Calculate alignment the same way as allocation
+            let dtype_align = self.dtype.align();
+            let layout_align = if dtype_align.is_power_of_two() && dtype_align > 0 {
+                dtype_align
+            } else {
+                1
+            };
             unsafe {
-                let layout = std::alloc::Layout::from_size_align(size, self.itemsize)
+                let layout = std::alloc::Layout::from_size_align(size, layout_align)
                     .unwrap();
                 std::alloc::dealloc(self.data, layout);
             }
