@@ -6,7 +6,7 @@
 use crate::array::{Array, ArrayError};
 use crate::ffi::PyArrayObject;
 use crate::types::{DType, NpyType};
-use libc::c_int;
+use libc::{c_int, c_void};
 use std::alloc::{alloc, dealloc, Layout};
 
 /// Convert internal Array to heap-allocated PyArrayObject* for C API
@@ -47,6 +47,14 @@ pub unsafe fn array_to_pyarray_ptr(array: &Array) -> *mut PyArrayObject {
         return std::ptr::null_mut();
     }
     
+    // Store type_num in _descr field for later retrieval
+    // Allocate a c_int on the heap to store the type_num
+    let type_num = npytype_to_type_num(array.dtype().type_());
+    let type_num_ptr = alloc(Layout::new::<c_int>()) as *mut c_int;
+    if !type_num_ptr.is_null() {
+        std::ptr::write(type_num_ptr, type_num);
+    }
+    
     // Initialize the structure
     std::ptr::write(pyarray_ptr, PyArrayObject {
         ob_base: std::ptr::null_mut(),
@@ -57,7 +65,7 @@ pub unsafe fn array_to_pyarray_ptr(array: &Array) -> *mut PyArrayObject {
         dimensions,
         strides,
         base: std::ptr::null_mut(),
-        _descr: std::ptr::null_mut(),
+        _descr: type_num_ptr as *mut c_void, // Store type_num pointer here
         weakreflist: std::ptr::null_mut(),
     });
     
@@ -70,6 +78,12 @@ pub unsafe fn array_to_pyarray_ptr(array: &Array) -> *mut PyArrayObject {
 /// The pointer must have been allocated by `array_to_pyarray_ptr` or be null.
 pub unsafe fn free_pyarray(ptr: *mut PyArrayObject) {
     if !ptr.is_null() {
+        // Free the type_num stored in _descr if it exists
+        let type_num_ptr = (*ptr)._descr as *mut c_int;
+        if !type_num_ptr.is_null() {
+            dealloc(type_num_ptr as *mut u8, Layout::new::<c_int>());
+        }
+        
         let layout = Layout::new::<PyArrayObject>();
         std::ptr::drop_in_place(ptr);
         dealloc(ptr as *mut u8, layout);
@@ -101,14 +115,43 @@ pub unsafe fn pyarray_to_array_view(pyarray: *const PyArrayObject) -> Result<Arr
         strides.push(arr.strides[i]);
     }
     
-    // Determine dtype from itemsize (simplified - would need descriptor in full implementation)
-    // For now, infer from itemsize - use first dimension or default to 1
-    let first_dim = if ndim > 0 && arr.dimensions[0] > 0 {
-        arr.dimensions[0] as usize
+    // Try to get dtype from stored type_num in _descr field
+    // If not available, infer from itemsize
+    let dtype = if !arr._descr.is_null() {
+        // Retrieve type_num from _descr
+        let type_num_ptr = arr._descr as *const c_int;
+        let type_num = *type_num_ptr;
+        match type_num_to_npytype(type_num) {
+            Some(npy_type) => DType::new(npy_type),
+            None => {
+                // Fallback to itemsize inference
+                let itemsize = if ndim > 0 {
+                    let last_idx = ndim - 1;
+                    if last_idx < 64 && arr.strides[last_idx] > 0 {
+                        arr.strides[last_idx] as usize
+                    } else {
+                        8
+                    }
+                } else {
+                    8
+                };
+                infer_dtype_from_itemsize(itemsize)?
+            }
+        }
     } else {
-        1
+        // No stored type_num, infer from itemsize
+        let itemsize = if ndim > 0 {
+            let last_idx = ndim - 1;
+            if last_idx < 64 && arr.strides[last_idx] > 0 {
+                arr.strides[last_idx] as usize
+            } else {
+                8 // Default to double (8 bytes)
+            }
+        } else {
+            8 // Default to double (8 bytes)
+        };
+        infer_dtype_from_itemsize(itemsize)?
     };
-    let dtype = infer_dtype_from_itemsize(first_dim)?;
     
     // Create Array view (doesn't own data)
     // Note: This is a simplified implementation. In a full implementation,
@@ -150,10 +193,17 @@ pub unsafe fn pyarray_to_array_owned(pyarray: *const PyArrayObject) -> Result<Ar
 ///
 /// This is a helper function that tries to infer the dtype from itemsize.
 /// In a full implementation, we would use the descriptor from PyArrayObject.
-fn infer_dtype_from_itemsize(_itemsize: usize) -> Result<DType, ArrayError> {
-    // Simplified: default to Double
-    // In full implementation, would check descriptor or itemsize more carefully
-    Ok(DType::new(NpyType::Double))
+fn infer_dtype_from_itemsize(itemsize: usize) -> Result<DType, ArrayError> {
+    // Map itemsize to dtype (simplified - assumes most common types)
+    let npy_type = match itemsize {
+        1 => NpyType::Byte,      // Could be Bool, Byte, or UByte
+        2 => NpyType::Short,     // Could be Short, UShort, or Half
+        4 => NpyType::Int,       // Could be Int, UInt, or Float
+        8 => NpyType::Double,    // Could be Long, ULong, or Double
+        16 => NpyType::CDouble,  // Complex double
+        _ => NpyType::Double,    // Default to double for unknown sizes
+    };
+    Ok(DType::new(npy_type))
 }
 
 /// Convert type number to NpyType

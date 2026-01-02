@@ -4,7 +4,7 @@
 mod tests {
     use raptors_core::ffi::PyArrayObject;
     use raptors_core::ffi::{array_to_pyarray_ptr as ffi_array_to_pyarray_ptr, free_pyarray};
-    use raptors_core::{Array, zeros, ones, empty};
+    use raptors_core::{Array, zeros};
     use raptors_core::types::{DType, NpyType};
     use std::ptr;
 
@@ -26,7 +26,7 @@ mod tests {
             descr: ptr::null_mut(),
             flags: 0,
             dimensions: dims,
-            strides: strides,
+            strides,
             base: ptr::null_mut(),
             _descr: ptr::null_mut(),
             weakreflist: ptr::null_mut(),
@@ -206,7 +206,7 @@ mod tests {
         let array = zeros(vec![2, 3], dtype).unwrap();
         let arr_ptr = array_to_pyarray_ptr(&array);
         
-        let newshape = vec![6i64];
+        let newshape = [6i64];
         let result = unsafe { PyArray_Reshape(arr_ptr, newshape.as_ptr(), 1) };
         assert!(!result.is_null());
         
@@ -369,7 +369,7 @@ mod tests {
         let arr1_ptr = array_to_pyarray_ptr(&array1);
         let arr2_ptr = array_to_pyarray_ptr(&array2);
         
-        let arrays = vec![arr1_ptr, arr2_ptr];
+        let arrays = [arr1_ptr, arr2_ptr];
         let result = unsafe { PyArray_Concatenate(arrays.as_ptr() as *mut *mut PyArrayObject, 2, 0) };
         assert!(!result.is_null());
         
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_pyarray_stack() {
-        use raptors_core::ffi::{PyArray_Stack, PyArray_NDIM, PyArray_DIM};
+        use raptors_core::ffi::{PyArray_Stack, PyArray_NDIM};
         
         let dtype = DType::new(NpyType::Double);
         let array1 = zeros(vec![2, 3], dtype.clone()).unwrap();
@@ -397,7 +397,7 @@ mod tests {
         let arr1_ptr = array_to_pyarray_ptr(&array1);
         let arr2_ptr = array_to_pyarray_ptr(&array2);
         
-        let arrays = vec![arr1_ptr, arr2_ptr];
+        let arrays = [arr1_ptr, arr2_ptr];
         let result = unsafe { PyArray_Stack(arrays.as_ptr() as *mut *mut PyArrayObject, 2, 0) };
         assert!(!result.is_null());
         
@@ -455,7 +455,12 @@ mod tests {
         }
         let arr_ptr = array_to_pyarray_ptr(&array);
         
-        let values = Array::new(vec![2], dtype).unwrap();
+        // Create values array with 1 element (shape [1])
+        let mut values = Array::new(vec![1], dtype).unwrap();
+        unsafe {
+            let ptr = values.data_ptr_mut() as *mut f64;
+            *ptr = 2.5; // Value to search for
+        }
         let values_ptr = array_to_pyarray_ptr(&values);
         
         let result = unsafe { PyArray_SearchSorted(arr_ptr, values_ptr, 0, ptr::null_mut()) };
@@ -573,13 +578,13 @@ mod tests {
 
     #[test]
     fn test_pyarray_broadcast_to_shape() {
-        use raptors_core::ffi::{PyArray_BroadcastToShape, PyArray_NDIM, PyArray_DIM};
+        use raptors_core::ffi::{PyArray_BroadcastToShape, PyArray_NDIM};
         
         let dtype = DType::new(NpyType::Double);
         let array = zeros(vec![1, 3], dtype).unwrap();
         let arr_ptr = array_to_pyarray_ptr(&array);
         
-        let target_shape = vec![2i64, 3i64];
+        let target_shape = [2i64, 3i64];
         let result = unsafe { PyArray_BroadcastToShape(arr_ptr, target_shape.as_ptr(), 2) };
         assert!(!result.is_null());
         
@@ -596,7 +601,7 @@ mod tests {
     fn test_pyarray_new() {
         use raptors_core::ffi::{PyArray_New, PyArray_NDIM, PyArray_SIZE};
         
-        let dims = vec![2i64, 3i64];
+        let dims = [2i64, 3i64];
         let type_num = 12; // Double
         
         let result = unsafe { PyArray_New(
@@ -627,7 +632,7 @@ mod tests {
     fn test_pyarray_empty() {
         use raptors_core::ffi::{PyArray_Empty, PyArray_NDIM, PyArray_SIZE};
         
-        let dims = vec![3i64, 4i64];
+        let dims = [3i64, 4i64];
         let type_num = 12; // Double
         
         let result = unsafe { PyArray_Empty(2, dims.as_ptr(), type_num, 0) };
@@ -648,7 +653,7 @@ mod tests {
     fn test_pyarray_zeros() {
         use raptors_core::ffi::{PyArray_Zeros, PyArray_SIZE};
         
-        let dims = vec![2i64, 3i64];
+        let dims = [2i64, 3i64];
         let type_num = 12; // Double
         
         let result = unsafe { PyArray_Zeros(2, dims.as_ptr(), type_num, 0) };
@@ -666,7 +671,7 @@ mod tests {
     fn test_pyarray_ones() {
         use raptors_core::ffi::{PyArray_Ones, PyArray_SIZE};
         
-        let dims = vec![2i64, 2i64];
+        let dims = [2i64, 2i64];
         let type_num = 12; // Double
         
         let result = unsafe { PyArray_Ones(2, dims.as_ptr(), type_num, 0) };
@@ -685,7 +690,7 @@ mod tests {
         use raptors_core::ffi::{PyArray_ITEMSIZE, PyArray_Zeros};
         
         // Use PyArray_Zeros instead of Empty to ensure data is allocated
-        let dims = vec![2i64, 3i64];
+        let dims = [2i64, 3i64];
         let type_num = 12; // Double (8 bytes)
         
         let arr = unsafe { PyArray_Zeros(2, dims.as_ptr(), type_num, 0) };
@@ -704,7 +709,7 @@ mod tests {
     fn test_pyarray_check() {
         use raptors_core::ffi::{PyArray_Check, PyArray_Empty};
         
-        let dims = vec![2i64, 3i64];
+        let dims = [2i64, 3i64];
         let type_num = 12; // Double
         
         let arr = unsafe { PyArray_Empty(2, dims.as_ptr(), type_num, 0) };

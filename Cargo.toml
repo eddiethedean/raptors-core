@@ -9,10 +9,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 libc = "0.2"
-bitflags = "2.0"
+bitflags = "2.10"
 
 [build-dependencies]
-cbindgen = "0.26"
+cbindgen = "0.29"
 
 [dev-dependencies]
 cc = "1.0"

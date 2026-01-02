@@ -3,7 +3,7 @@
 //! This module provides argsort functionality,
 //! returning indices that would sort an array
 
-use crate::array::{Array, ArrayError};
+use crate::array::Array;
 use crate::types::{DType, NpyType};
 
 use super::SortingError;

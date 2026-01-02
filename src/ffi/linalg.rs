@@ -3,10 +3,8 @@
 //! This module provides C API wrappers for linear algebra operations,
 //! equivalent to NumPy's linear algebra functions
 
-use crate::array::Array;
 use crate::ffi::{PyArrayObject, conversion};
 use crate::linalg::{matmul, dot};
-use libc::c_int;
 use std::ptr;
 
 /// Matrix multiplication

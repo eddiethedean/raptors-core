@@ -3,10 +3,8 @@
 //! This module provides C API wrappers for indexing and selection operations,
 //! equivalent to NumPy's indexing functions
 
-use crate::array::Array;
 use crate::ffi::{PyArrayObject, conversion};
 use crate::indexing::{fancy_index_array, boolean_index_array};
-use crate::indexing::IndexError;
 use libc::c_int;
 use std::ptr;
 

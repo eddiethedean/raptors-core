@@ -5,7 +5,7 @@
 
 use crate::array::Array;
 use crate::ffi::{PyArrayObject, conversion};
-use crate::broadcasting::{broadcast_shapes, broadcast_strides};
+use crate::broadcasting::broadcast_shapes;
 use libc::c_int;
 use std::ptr;
 
@@ -149,7 +149,7 @@ pub extern "C" fn PyArray_Clip(
         };
         
         // Get min and max values (simplified - assumes scalar arrays)
-        let min_val = if min.is_null() {
+        let _min_val = if min.is_null() {
             None
         } else {
             let min_array = match conversion::pyarray_to_array_view(min) {
@@ -160,7 +160,7 @@ pub extern "C" fn PyArray_Clip(
             Some(min_array)
         };
         
-        let max_val = if max.is_null() {
+        let _max_val = if max.is_null() {
             None
         } else {
             let max_array = match conversion::pyarray_to_array_view(max) {

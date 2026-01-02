@@ -149,7 +149,7 @@ mod tests {
             *data_ptr.add(0) = -5.0;
             *data_ptr.add(1) = 5.0;
             *data_ptr.add(2) = 0.0;
-            *data_ptr.add(3) = -3.14;
+            *data_ptr.add(3) = -std::f64::consts::PI;
         }
         
         let mut output = empty(input.shape().to_vec(), dtype).unwrap();
@@ -161,7 +161,7 @@ mod tests {
             assert!((*out_ptr.add(0) - 5.0).abs() < 1e-10);
             assert!((*out_ptr.add(1) - 5.0).abs() < 1e-10);
             assert!((*out_ptr.add(2)).abs() < 1e-10);
-            assert!((*out_ptr.add(3) - 3.14).abs() < 1e-10);
+            assert!((*out_ptr.add(3) - std::f64::consts::PI).abs() < 1e-10);
         }
     }
 

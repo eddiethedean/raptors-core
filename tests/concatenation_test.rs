@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, zeros};
+    use raptors_core::zeros;
     use raptors_core::concatenation::{concatenate, stack, split, SplitSpec};
     use raptors_core::types::{DType, NpyType};
 

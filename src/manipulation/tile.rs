@@ -1,6 +1,6 @@
 //! Array tiling operations
 
-use crate::array::{Array, ArrayError};
+use crate::array::Array;
 
 use super::ManipulationError;
 

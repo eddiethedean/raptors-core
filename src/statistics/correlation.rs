@@ -41,7 +41,7 @@ pub fn cov(array: &Array) -> Result<Array, StatisticsError> {
     let shape = array.shape();
     let n = shape[1] as usize;
     let dtype = DType::new(crate::types::NpyType::Double);
-    let mut output = Array::new(vec![n as i64, n as i64], dtype)?;
+    let output = Array::new(vec![n as i64, n as i64], dtype)?;
     
     // Initialize to zeros (already done by Array::new)
     Ok(output)

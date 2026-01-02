@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, DType, zeros};
+    use raptors_core::{DType, zeros};
     use raptors_core::types::NpyType;
     use raptors_core::masked::*;
 
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     fn test_fill_masked() {
         let dtype = DType::new(NpyType::Double);
-        let mut data = zeros(vec![3], dtype).unwrap();
+        let data = zeros(vec![3], dtype).unwrap();
         
         let mut masked = masked_array_with_indices(data, &[1]).unwrap();
         

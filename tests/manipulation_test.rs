@@ -2,9 +2,9 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, empty, zeros};
+    use raptors_core::empty;
     use raptors_core::manipulation::{flip, flipud, fliplr, rotate90, roll, repeat, tile, unique};
-    use raptors_core::manipulation::{union1d, intersect1d, setdiff1d, setxor1d};
+    use raptors_core::manipulation::{union1d, intersect1d};
     use raptors_core::types::{DType, NpyType};
 
     #[test]

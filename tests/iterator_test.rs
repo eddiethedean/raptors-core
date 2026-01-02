@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, zeros};
+    use raptors_core::zeros;
     use raptors_core::iterators::{ArrayIterator, FlatIterator};
     use raptors_core::types::{DType, NpyType};
 

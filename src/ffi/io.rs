@@ -3,7 +3,6 @@
 //! This module provides C API wrappers for file I/O operations,
 //! equivalent to NumPy's file I/O functions
 
-use crate::array::Array;
 use crate::ffi::{PyArrayObject, conversion};
 use crate::io::{save_npy, load_npy};
 use libc::{c_char, c_int};

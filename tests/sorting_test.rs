@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, empty};
+    use raptors_core::empty;
     use raptors_core::sorting::{sort, argsort, searchsorted, partition, SortKind};
     use raptors_core::types::{DType, NpyType};
 

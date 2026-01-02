@@ -50,8 +50,8 @@ mod tests {
         let result = str_equal(&array1, &array2).unwrap();
         unsafe {
             let ptr = result.data_ptr() as *const bool;
-            assert_eq!(*ptr.add(0), true);
-            assert_eq!(*ptr.add(1), true);
+            assert!(*ptr.add(0));
+            assert!(*ptr.add(1));
         }
     }
 
@@ -65,8 +65,8 @@ mod tests {
         let result = str_equal(&array1, &array2).unwrap();
         unsafe {
             let ptr = result.data_ptr() as *const bool;
-            assert_eq!(*ptr.add(0), true);
-            assert_eq!(*ptr.add(1), false);
+            assert!(*ptr.add(0));
+            assert!(!(*ptr.add(1)));
         }
     }
 
@@ -121,8 +121,8 @@ mod tests {
         let result = str_less(&array1, &array2).unwrap();
         unsafe {
             let ptr = result.data_ptr() as *const bool;
-            assert_eq!(*ptr.add(0), true);  // "apple" < "banana"
-            assert_eq!(*ptr.add(1), false); // "zebra" < "apple" is false
+            assert!(*ptr.add(0));  // "apple" < "banana"
+            assert!(!(*ptr.add(1))); // "zebra" < "apple" is false
         }
     }
 
@@ -136,8 +136,8 @@ mod tests {
         let result = str_equal_case_insensitive(&array1, &array2).unwrap();
         unsafe {
             let ptr = result.data_ptr() as *const bool;
-            assert_eq!(*ptr.add(0), true);
-            assert_eq!(*ptr.add(1), true);
+            assert!(*ptr.add(0));
+            assert!(*ptr.add(1));
         }
     }
 
@@ -199,8 +199,8 @@ mod tests {
         let result = str_greater(&array1, &array2).unwrap();
         unsafe {
             let ptr = result.data_ptr() as *const bool;
-            assert_eq!(*ptr.add(0), true);  // "banana" > "apple"
-            assert_eq!(*ptr.add(1), false); // "apple" > "zebra" is false
+            assert!(*ptr.add(0));  // "banana" > "apple"
+            assert!(!(*ptr.add(1))); // "apple" > "zebra" is false
         }
     }
 

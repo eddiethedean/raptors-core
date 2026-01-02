@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::Array;
+    
     use raptors_core::zeros;
     use raptors_core::indexing::*;
     use raptors_core::types::{DType, NpyType};

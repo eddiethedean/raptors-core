@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn test_normalize_slice_negative_indices() {
         let slice = Slice::new(Some(-3), Some(-1), Some(1));
-        let (start, stop, step) = normalize_slice(&slice, 10).unwrap();
+        let (start, stop, _step) = normalize_slice(&slice, 10).unwrap();
         assert_eq!(start, 7); // 10 - 3
         assert_eq!(stop, 9);  // 10 - 1
     }

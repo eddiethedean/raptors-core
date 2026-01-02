@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, empty};
+    use raptors_core::empty;
     use raptors_core::statistics::{percentile, median, mode, std, var, histogram};
     use raptors_core::types::{DType, NpyType};
 

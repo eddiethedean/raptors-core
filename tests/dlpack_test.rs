@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, DType, zeros};
+    use raptors_core::{DType, zeros};
     use raptors_core::types::NpyType;
     use raptors_core::dlpack::*;
 
@@ -34,13 +34,13 @@ mod tests {
             (NpyType::LongLong, DLDataTypeCode::Int, 64),
         ];
         
-        for (npy_type, expected_code, expected_bits) in test_cases {
+        for (npy_type, _expected_code, _expected_bits) in test_cases {
             let dtype = DType::new(npy_type);
             let array = zeros(vec![1], dtype).unwrap();
             
             unsafe {
                 let dlpack = array_to_dlpack(&array).unwrap();
-                let tensor = &*dlpack;
+                let _tensor = &*dlpack;
                 
                 // Would verify dtype conversion when properly implemented
                 // assert_eq!(tensor.dtype.code, expected_code as u8);

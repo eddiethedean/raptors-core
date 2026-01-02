@@ -3,7 +3,6 @@
 //! This module provides C API wrappers for sorting and searching operations,
 //! equivalent to NumPy's sorting functions
 
-use crate::array::Array;
 use crate::ffi::{PyArrayObject, conversion};
 use crate::sorting::{sort, argsort, searchsorted, partition, SortKind};
 use libc::c_int;
@@ -19,7 +18,7 @@ use std::ptr;
 #[no_mangle]
 pub extern "C" fn PyArray_Sort(
     arr: *mut PyArrayObject,
-    axis: c_int,
+    _axis: c_int,
     _kind: c_int, // Sort kind (simplified - not used yet)
 ) -> c_int {
     if arr.is_null() {
@@ -55,7 +54,7 @@ pub extern "C" fn PyArray_Sort(
 #[no_mangle]
 pub extern "C" fn PyArray_ArgSort(
     arr: *mut PyArrayObject,
-    axis: c_int,
+    _axis: c_int,
     _kind: c_int, // Sort kind (simplified - not used yet)
 ) -> *mut PyArrayObject {
     if arr.is_null() {
@@ -132,7 +131,7 @@ pub extern "C" fn PyArray_SearchSorted(
 pub extern "C" fn PyArray_Partition(
     arr: *mut PyArrayObject,
     kth: c_int,
-    axis: c_int,
+    _axis: c_int,
     _kind: c_int, // Sort kind (simplified - not used yet)
 ) -> c_int {
     if arr.is_null() {

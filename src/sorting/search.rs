@@ -3,7 +3,7 @@
 //! This module provides searchsorted functionality,
 //! finding insertion points in sorted arrays
 
-use crate::array::{Array, ArrayError};
+use crate::array::Array;
 use crate::types::{DType, NpyType};
 
 use super::SortingError;

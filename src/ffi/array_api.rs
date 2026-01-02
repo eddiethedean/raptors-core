@@ -5,7 +5,7 @@
 use super::PyArrayObject;
 use super::conversion;
 use libc::{c_int, c_void, size_t};
-use crate::{empty, zeros, ones, types::{DType, NpyType}};
+use crate::{empty, zeros, ones, types::DType};
 
 /// Get the number of dimensions of an array
 ///
@@ -105,24 +105,26 @@ pub extern "C" fn PyArray_ITEMSIZE(arr: *mut PyArrayObject) -> size_t {
     }
     
     unsafe {
-        // For now, try to infer itemsize from the array
-        // If data is null (empty array), we can't convert, so infer from type
         let arr_ref = &*arr;
-        if arr_ref.data.is_null() {
-            // Empty array - infer from type_num or use default
-            // In full implementation, would check descriptor
-            return 8; // Default to double
-        }
         
-        // Try to convert to Array to get itemsize
-        match conversion::pyarray_to_array_view(arr) {
-            Ok(array) => array.itemsize() as size_t,
-            Err(_) => {
-                // Fallback: infer from type_num or use default
-                // For now, return 8 as default (double)
-                8
+        // Calculate itemsize from the last stride (for C-contiguous arrays)
+        // The last stride should equal the itemsize
+        if arr_ref.nd > 0 {
+            let last_dim_idx = (arr_ref.nd - 1) as usize;
+            if last_dim_idx < 64 {
+                let last_stride = arr_ref.strides[last_dim_idx];
+                if last_stride > 0 {
+                    return last_stride as size_t;
+                }
             }
         }
+        
+        // Fallback: if we can't infer from strides, try to get from data
+        // For arrays created via PyArray_Zeros/Ones/Empty, we can infer from the
+        // fact that they were created with a known type_num, but we don't store that.
+        // For now, default to 8 (double) which is the most common case.
+        // In a full implementation, we would check the descriptor.
+        8 // Default to double (8 bytes)
     }
 }
 

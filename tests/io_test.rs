@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use raptors_core::{Array, zeros};
+    use raptors_core::zeros;
     use raptors_core::io::{save_npy, load_npy};
     use raptors_core::types::{DType, NpyType};
     use std::fs;

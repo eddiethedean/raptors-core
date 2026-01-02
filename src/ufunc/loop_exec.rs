@@ -123,7 +123,7 @@ pub fn execute_unary_ufunc_loop(
     }
     
     let count = output.size();
-    let itemsize = output.itemsize();
+    let _itemsize = output.itemsize();
     
     if count == 0 {
         return Ok(());

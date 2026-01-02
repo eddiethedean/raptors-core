@@ -2,7 +2,7 @@
 
 use crate::array::Array;
 
-use super::{StructuredError, StructuredDType};
+use super::StructuredDType;
 
 /// Validate that array has structured dtype
 ///
