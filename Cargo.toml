@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 libc = "0.2"
 bitflags = "2.10"
 memmap2 = "0.9"
+rayon = "1.8"
 
 [build-dependencies]
 cbindgen = "0.29"

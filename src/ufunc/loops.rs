@@ -5,6 +5,42 @@
 
 use crate::types::NpyType;
 
+/// Check if an array is contiguous (stride equals itemsize)
+#[inline(always)]
+#[allow(dead_code)] // Reserved for future use
+fn is_contiguous(stride: usize, itemsize: usize) -> bool {
+    stride == itemsize
+}
+
+/// Check if all arrays in a binary operation are contiguous
+#[inline(always)]
+fn all_contiguous(stride1: usize, stride2: usize, stride_out: usize, itemsize: usize) -> bool {
+    stride1 == itemsize && stride2 == itemsize && stride_out == itemsize
+}
+
+/// Add loop for double precision (contiguous path)
+///
+/// Fast path when all arrays are contiguous (stride == itemsize).
+/// Uses direct pointer arithmetic without stride multiplication.
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn add_loop_double_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const f64;
+    let in2_ptr = in2 as *const f64;
+    let out_ptr = out as *mut f64;
+    
+    // Use direct iteration for contiguous arrays
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) + *in2_ptr.add(i);
+    }
+}
+
 /// Add loop for double precision
 ///
 /// # Safety
@@ -18,6 +54,12 @@ pub unsafe fn add_loop_double(
     stride2: usize,
     stride_out: usize,
 ) {
+    // Use fast contiguous path if all arrays are contiguous (stride == itemsize for f64 = 8)
+    const ITEMSIZE: usize = 8;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return add_loop_double_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const f64;
     let in2_ptr = in2 as *const f64;
     let out_ptr = out as *mut f64;
@@ -26,6 +68,25 @@ pub unsafe fn add_loop_double(
         let val1 = *in1_ptr.add(i * stride1);
         let val2 = *in2_ptr.add(i * stride2);
         *out_ptr.add(i * stride_out) = val1 + val2;
+    }
+}
+
+/// Add loop for float precision (contiguous path)
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn add_loop_float_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const f32;
+    let in2_ptr = in2 as *const f32;
+    let out_ptr = out as *mut f32;
+    
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) + *in2_ptr.add(i);
     }
 }
 
@@ -42,6 +103,12 @@ pub unsafe fn add_loop_float(
     stride2: usize,
     stride_out: usize,
 ) {
+    // Use fast contiguous path if all arrays are contiguous (stride == itemsize for f32 = 4)
+    const ITEMSIZE: usize = 4;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return add_loop_float_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const f32;
     let in2_ptr = in2 as *const f32;
     let out_ptr = out as *mut f32;
@@ -50,6 +117,25 @@ pub unsafe fn add_loop_float(
         let val1 = *in1_ptr.add(i * stride1);
         let val2 = *in2_ptr.add(i * stride2);
         *out_ptr.add(i * stride_out) = val1 + val2;
+    }
+}
+
+/// Add loop for integers (contiguous path)
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn add_loop_int_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const i32;
+    let in2_ptr = in2 as *const i32;
+    let out_ptr = out as *mut i32;
+    
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) + *in2_ptr.add(i);
     }
 }
 
@@ -66,6 +152,12 @@ pub unsafe fn add_loop_int(
     stride2: usize,
     stride_out: usize,
 ) {
+    // Use fast contiguous path if all arrays are contiguous (stride == itemsize for i32 = 4)
+    const ITEMSIZE: usize = 4;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return add_loop_int_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const i32;
     let in2_ptr = in2 as *const i32;
     let out_ptr = out as *mut i32;
@@ -74,6 +166,25 @@ pub unsafe fn add_loop_int(
         let val1 = *in1_ptr.add(i * stride1);
         let val2 = *in2_ptr.add(i * stride2);
         *out_ptr.add(i * stride_out) = val1 + val2;
+    }
+}
+
+/// Subtract loop for double precision (contiguous path)
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn subtract_loop_double_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const f64;
+    let in2_ptr = in2 as *const f64;
+    let out_ptr = out as *mut f64;
+    
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) - *in2_ptr.add(i);
     }
 }
 
@@ -90,6 +201,11 @@ pub unsafe fn subtract_loop_double(
     stride2: usize,
     stride_out: usize,
 ) {
+    const ITEMSIZE: usize = 8;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return subtract_loop_double_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const f64;
     let in2_ptr = in2 as *const f64;
     let out_ptr = out as *mut f64;
@@ -98,6 +214,25 @@ pub unsafe fn subtract_loop_double(
         let val1 = *in1_ptr.add(i * stride1);
         let val2 = *in2_ptr.add(i * stride2);
         *out_ptr.add(i * stride_out) = val1 - val2;
+    }
+}
+
+/// Multiply loop for double precision (contiguous path)
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn multiply_loop_double_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const f64;
+    let in2_ptr = in2 as *const f64;
+    let out_ptr = out as *mut f64;
+    
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) * *in2_ptr.add(i);
     }
 }
 
@@ -114,6 +249,11 @@ pub unsafe fn multiply_loop_double(
     stride2: usize,
     stride_out: usize,
 ) {
+    const ITEMSIZE: usize = 8;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return multiply_loop_double_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const f64;
     let in2_ptr = in2 as *const f64;
     let out_ptr = out as *mut f64;
@@ -122,6 +262,25 @@ pub unsafe fn multiply_loop_double(
         let val1 = *in1_ptr.add(i * stride1);
         let val2 = *in2_ptr.add(i * stride2);
         *out_ptr.add(i * stride_out) = val1 * val2;
+    }
+}
+
+/// Divide loop for double precision (contiguous path)
+///
+/// # Safety
+/// Caller must ensure all pointers are valid and aligned, and that arrays are contiguous.
+pub unsafe fn divide_loop_double_contiguous(
+    in1: *const u8,
+    in2: *const u8,
+    out: *mut u8,
+    count: usize,
+) {
+    let in1_ptr = in1 as *const f64;
+    let in2_ptr = in2 as *const f64;
+    let out_ptr = out as *mut f64;
+    
+    for i in 0..count {
+        *out_ptr.add(i) = *in1_ptr.add(i) / *in2_ptr.add(i);
     }
 }
 
@@ -138,6 +297,11 @@ pub unsafe fn divide_loop_double(
     stride2: usize,
     stride_out: usize,
 ) {
+    const ITEMSIZE: usize = 8;
+    if all_contiguous(stride1, stride2, stride_out, ITEMSIZE) {
+        return divide_loop_double_contiguous(in1, in2, out, count);
+    }
+    
     let in1_ptr = in1 as *const f64;
     let in2_ptr = in2 as *const f64;
     let out_ptr = out as *mut f64;

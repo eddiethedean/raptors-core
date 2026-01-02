@@ -1,7 +1,6 @@
 //! Tests for text file I/O functionality
 
 use std::fs;
-use std::path::Path;
 use raptors_core::{
     array::Array,
     io::{save_text, load_text, SaveTextOptions, LoadTextOptions},
@@ -331,7 +330,7 @@ fn test_save_load_text_precision() {
     
     unsafe {
         let data = array.data_ptr_mut() as *mut f64;
-        *data = 3.14159265358979323846;
+        *data = 3.141592653589793;
     }
     
     // Save with default format (should preserve precision)
@@ -343,7 +342,7 @@ fn test_save_load_text_precision() {
     unsafe {
         let loaded_data = loaded.data_ptr() as *const f64;
         // Should preserve high precision
-        assert!((*loaded_data - 3.14159265358979323846).abs() < 1e-10);
+        assert!((*loaded_data - 3.141592653589793).abs() < 1e-10);
     }
     
     // Cleanup

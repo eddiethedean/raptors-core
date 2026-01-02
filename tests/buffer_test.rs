@@ -2,7 +2,7 @@
 
 use raptors_core::{
     array::Array,
-    buffer::{export_buffer, import_buffer, BufferError, FormatString},
+    buffer::{export_buffer, import_buffer, FormatString},
     types::{DType, NpyType},
 };
 

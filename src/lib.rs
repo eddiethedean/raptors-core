@@ -33,6 +33,7 @@ pub mod structured;
 pub mod types;
 pub mod ufunc;
 pub mod utils;
+pub mod performance;
 
 /// Re-export main types for convenience
 pub use array::{Array, empty, ones, zeros};

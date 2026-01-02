@@ -4,7 +4,7 @@
 
 #![allow(unused_unsafe)]
 
-use raptors_core::{array::Array, einsum::einsum, types::DType, zeros, ones};
+use raptors_core::{array::Array, einsum::einsum, types::DType};
 
 #[test]
 fn test_einsum_matrix_multiply() {
@@ -170,7 +170,7 @@ fn test_einsum_batch_matrix_multiply() {
     
     // This might not work yet with our simplified implementation
     // but the test structure is in place
-    let result = einsum("bij,bjk->bik", &[&a, &b]);
+    let _result = einsum("bij,bjk->bik", &[&a, &b]);
     // For now, we'll just check it doesn't panic
     // Full implementation would verify correct batched result
 }
@@ -188,7 +188,7 @@ fn test_einsum_diagonal_extraction() {
     }
     
     // This might not be fully implemented yet
-    let result = einsum("ii->i", &[&a]);
+    let _result = einsum("ii->i", &[&a]);
     // Test structure in place for when implemented
 }
 
@@ -210,7 +210,7 @@ fn test_einsum_shape_mismatch() {
     let b = Array::new(vec![4, 5], DType::new(raptors_core::types::NpyType::Double)).unwrap();
     
     // Shapes don't match for matrix multiply
-    let result = einsum("ij,jk->ik", &[&a, &b]);
+    let _result = einsum("ij,jk->ik", &[&a, &b]);
     // Should return error or handle gracefully
 }
 
@@ -268,7 +268,7 @@ fn test_einsum_three_tensors() {
     let a = Array::new(vec![2, 3, 4], DType::new(raptors_core::types::NpyType::Double)).unwrap();
     let b = Array::new(vec![3, 4, 5], DType::new(raptors_core::types::NpyType::Double)).unwrap();
     
-    let result = einsum("ijk,jkl->il", &[&a, &b]);
+    let _result = einsum("ijk,jkl->il", &[&a, &b]);
     // Multi-tensor contraction - may not be fully implemented
     // Test structure in place
 }
@@ -315,7 +315,7 @@ fn test_einsum_trace_pattern() {
     }
     
     // Trace should sum diagonal: 1 + 2 + 3 = 6
-    let result = einsum("ii->", &[&a]);
+    let _result = einsum("ii->", &[&a]);
     // This pattern may not be fully implemented yet, but test structure is here
 }
 
@@ -362,7 +362,7 @@ fn test_einsum_matrix_vector_product() {
         }
     }
     
-    let result = einsum("ij,j->i", &[&a, &b]);
+    let _result = einsum("ij,j->i", &[&a, &b]);
     // Should result in [6, 6] (sum of 1+2+3 for each row)
 }
 
@@ -379,7 +379,7 @@ fn test_einsum_tensor_trace() {
     }
     
     // Trace over first two and last two dimensions
-    let result = einsum("iijj->", &[&a]);
+    let _result = einsum("iijj->", &[&a]);
     // Test structure for complex trace operations
 }
 
@@ -418,7 +418,7 @@ fn test_einsum_single_dimension_sum() {
     }
     
     // Sum over columns, keep rows
-    let result = einsum("ij->i", &[&a]);
+    let _result = einsum("ij->i", &[&a]);
     // Should result in [3, 3] (sum of each row)
 }
 
@@ -431,7 +431,7 @@ fn test_einsum_contraction_order() {
     let c = Array::new(vec![4, 5], DType::new(raptors_core::types::NpyType::Double)).unwrap();
     
     // Chain contraction: (ij,jk),kl -> il
-    let result = einsum("ij,jk,kl->il", &[&a, &b, &c]);
+    let _result = einsum("ij,jk,kl->il", &[&a, &b, &c]);
     // Tests path optimization - may not be fully implemented yet
 }
 
@@ -452,7 +452,7 @@ fn test_einsum_duplicate_indices_output() {
     let a = Array::new(vec![3, 3], DType::new(raptors_core::types::NpyType::Double)).unwrap();
     
     // Output has duplicate 'i'
-    let result = einsum("ij->ii", &[&a]);
+    let _result = einsum("ij->ii", &[&a]);
     // This should either error or be handled specially
 }
 
