@@ -6,10 +6,31 @@ This document tracks the conversion of NumPy's C/C++ core modules to Rust.
 
 **Current Phase**: Phase 7 Complete ✅  
 **Next Phase**: Phase 8 - Feature Enhancements  
-**Overall Progress**: Core functionality complete, focusing on enhancements and optimizations
+**Overall Progress**: Core functionality complete, focusing on matching NumPy tit-for-tat
 
 **Completed Phases**: 1-7 (Core, Advanced, Extended, Specialized features, and C API)  
-**Remaining Phases**: 8-12 (Enhancements, Additional features, Performance, API completeness, Advanced features)
+**Remaining Phases**: 8-12 (NumPy feature matching and completion)  
+**Future Enhancements**: Features beyond NumPy's current capabilities (GPU, advanced SIMD, JIT, async, etc.)
+
+## Project Focus: NumPy Feature Matching
+
+**Primary Goal**: Match NumPy's functionality tit-for-tat. Features that go beyond NumPy's current capabilities are clearly marked as "Future Enhancements - Beyond NumPy" and are not part of the core roadmap phases.
+
+**NumPy Features (Phases 1-12)**: All features that NumPy currently has or supports
+- Core array operations
+- Mathematical functions
+- File I/O (NPY and text formats)
+- C API compatibility
+- Custom dtypes (NumPy supports this)
+- Array subclassing (NumPy supports this)
+- Basic performance optimizations (matching NumPy)
+
+**Future Enhancements (Beyond NumPy)**: Features NumPy does NOT currently have
+- GPU support (NumPy does NOT have this - similar to CuPy)
+- JIT compilation (NumPy does NOT have this)
+- Async support (NumPy does NOT have this)
+- Advanced SIMD optimizations (beyond NumPy's current implementation)
+- Extensive parallel processing (beyond NumPy's threading)
 
 ## Module Mapping
 
@@ -372,9 +393,10 @@ Phase 7 focused on completing the NumPy C API compatibility layer by implementin
 - ✅ **Phase 7**: C API compatibility (40+ C API wrapper functions)
 - ⏳ **Phase 8**: Feature enhancements (Enhanced views, memory mapping, reference counting, full API)
 - ⏳ **Phase 9**: Additional NumPy features (einsum, text I/O, buffer protocol, user-defined types)
-- ⏳ **Phase 10**: Performance optimizations (SIMD, parallel processing, cache optimization)
+- ⏳ **Phase 10**: NumPy performance matching (basic optimizations, threading)
 - ⏳ **Phase 11**: API completeness (Python bindings, documentation, benchmarks)
-- ⏳ **Phase 12**: Advanced features (Custom dtypes, GPU support, advanced optimizations)
+- ⏳ **Phase 12**: NumPy advanced features (Custom dtypes, array subclassing, broadcasting completion)
+- 🔮 **Future Enhancements**: Features beyond NumPy (GPU, advanced SIMD, extensive parallel processing, JIT, async)
 
 ### 6.1 String Operations (COMPLETED)
 - **Target Files**: `numpy/_core/src/multiarray/strfuncs.c`
@@ -428,23 +450,22 @@ Phase 7 focused on completing the NumPy C API compatibility layer by implementin
 
 ## Future Phases Summary
 
-The roadmap is organized into phases 1-12:
+The roadmap is organized into phases 1-12 (NumPy feature matching) plus Future Enhancements (beyond NumPy):
 
 - **Phases 1-7**: ✅ COMPLETED - Core functionality through C API compatibility
-- **Phase 8**: Feature Enhancements - Improving existing features
-- **Phase 9**: Additional NumPy Features - einsum, text I/O, buffer protocol, user-defined types
-- **Phase 10**: Performance Optimizations - SIMD, parallel processing, cache optimization
+- **Phase 8**: NumPy Feature Enhancements - Improving existing features to match NumPy
+- **Phase 9**: Additional NumPy Features - einsum, text I/O, buffer protocol, user-defined types (all NumPy features)
+- **Phase 10**: NumPy Performance Matching - Basic optimizations and threading to match NumPy
 - **Phase 11**: API Completeness - Python bindings, documentation, benchmarks
-- **Phase 12**: Advanced Features - Custom dtypes, GPU support, advanced optimizations
+- **Phase 12**: NumPy Advanced Features - Custom dtypes, array subclassing, broadcasting completion (all NumPy features)
+- **Future Enhancements**: Features beyond NumPy (GPU, advanced SIMD, JIT, async, extensive parallel processing)
 
 ## Long-Term Goals (Consolidated from Phases 8-12)
 
-### Performance Optimization (Phase 10)
-- SIMD optimizations for common operations
-- Parallel processing support
-- JIT compilation opportunities
-- Cache-friendly algorithms
-- Zero-copy operations where possible
+### Performance Optimization (Phase 10 - NumPy Matching)
+- Basic performance optimizations to match NumPy
+- NumPy-compatible threading behavior
+- Note: Advanced SIMD, extensive parallel processing, JIT, and advanced cache optimizations are marked as Future Enhancements (beyond NumPy)
 
 ### API Completeness (Phase 11)
 - Complete NumPy C API coverage (mostly done, text I/O remaining)
@@ -453,12 +474,18 @@ The roadmap is organized into phases 1-12:
 - Documentation and examples
 - Benchmark suite
 
-### Advanced Features (Phase 12)
-- Custom dtype support
-- Array subclassing support
-- Broadcasting enhancements
-- Advanced memory layout optimizations
-- GPU array support (future consideration)
+### Advanced Features (Phase 12 - NumPy Features)
+- Custom dtype support (NumPy has this)
+- Array subclassing support (NumPy has this)
+- Broadcasting completion (matching NumPy)
+- Memory layout optimizations (matching NumPy)
+
+### Future Enhancements (Beyond NumPy)
+- GPU array support (NumPy does NOT have this - similar to CuPy)
+- Advanced SIMD optimizations (beyond NumPy's current implementation)
+- Extensive parallel processing (beyond NumPy's threading)
+- JIT compilation (NumPy does NOT have this)
+- Async support (NumPy does NOT have this - Rust-specific)
 
 ## Module Conversion Status Summary
 
@@ -593,56 +620,25 @@ Phase 9 focuses on implementing additional NumPy features not yet covered:
   - Type metadata support
   - Type conversion hooks
 
-## Phase 10: Performance Optimizations
+## Phase 10: NumPy Performance Matching
 
-Phase 10 focuses on performance improvements and optimizations:
+Phase 10 focuses on matching NumPy's performance characteristics:
 
-### 10.1 SIMD Optimizations (HIGH PRIORITY)
-- **Target**: Optimize common operations using SIMD
+### 10.1 Basic Performance Optimizations (MEDIUM PRIORITY)
+- **Target**: Match NumPy's performance for core operations
 - **Features**:
-  - AVX/AVX2 optimizations for x86_64
-  - SSE optimizations for older x86
-  - NEON optimizations for ARM
-  - Automatic SIMD detection
-  - SIMD-optimized ufuncs
-  - SIMD-optimized reductions
-  - SIMD-optimized element-wise operations
+  - Optimize hot paths in ufuncs
+  - Optimize reduction operations
+  - Memory access pattern improvements
+  - Basic cache-friendly algorithms
+  - Minimize unnecessary copies
 
-### 10.2 Parallel Processing (HIGH PRIORITY)
-- **Target**: Multi-threaded operations
+### 10.2 NumPy-Compatible Threading (MEDIUM PRIORITY)
+- **Target**: Match NumPy's threading behavior where applicable
 - **Features**:
-  - Parallel reduction operations
-  - Parallel element-wise operations
-  - Thread pool management
-  - Work-stealing algorithms
-  - NUMA-aware allocation
-  - Lock-free data structures where applicable
-
-### 10.3 Cache-Friendly Algorithms (MEDIUM PRIORITY)
-- **Target**: Optimize memory access patterns
-- **Features**:
-  - Block-based algorithms for large arrays
-  - Cache-aware tiling
-  - Memory prefetching
-  - Data layout optimizations
-  - Minimize cache misses
-
-### 10.4 Zero-Copy Operations (MEDIUM PRIORITY)
-- **Target**: Avoid unnecessary data copying
-- **Features**:
-  - Zero-copy views
-  - Zero-copy slicing
-  - Zero-copy broadcasting
-  - Lazy evaluation where possible
-  - Copy-on-write semantics
-
-### 10.5 JIT Compilation Opportunities (LOW PRIORITY)
-- **Target**: Just-in-time compilation for hot paths
-- **Features**:
-  - Identify hot code paths
-  - JIT compilation framework
-  - Runtime code generation
-  - Specialized loop kernels
+  - Thread-safe operations where NumPy uses threading
+  - Basic parallel reductions (matching NumPy's approach)
+  - Thread pool management (if NumPy uses it)
 
 ## Phase 11: API Completeness and Documentation
 
@@ -659,13 +655,13 @@ Phase 11 focuses on completing the API and documentation:
   - Seamless NumPy interop
 
 ### 11.2 High-Level Rust API (MEDIUM PRIORITY)
-- **Target**: More idiomatic Rust API design
+- **Target**: More idiomatic Rust API design (Rust-specific, not NumPy)
 - **Features**:
   - Builder patterns for array creation
   - Iterator-based operations
   - Trait-based extensibility
   - Error handling improvements
-  - Async support where applicable
+  - Note: Async support is beyond NumPy and marked as future enhancement
 
 ### 11.3 Complete Documentation (HIGH PRIORITY)
 - **Target**: Comprehensive documentation
@@ -687,12 +683,12 @@ Phase 11 focuses on completing the API and documentation:
   - Throughput measurements
   - CI/CD integration
 
-## Phase 12: Advanced Features
+## Phase 12: NumPy Advanced Features
 
-Phase 12 focuses on advanced and experimental features:
+Phase 12 focuses on completing remaining NumPy features:
 
 ### 12.1 Custom Dtype Creation API (MEDIUM PRIORITY)
-- **Target**: User-defined dtype system
+- **Target**: User-defined dtype system (NumPy has this)
 - **Features**:
   - Custom dtype registration
   - Custom dtype operations
@@ -701,7 +697,7 @@ Phase 12 focuses on advanced and experimental features:
   - Type-specific optimizations
 
 ### 12.2 Array Subclassing Support (LOW PRIORITY)
-- **Target**: Extend array types
+- **Target**: Extend array types (NumPy supports this)
 - **Features**:
   - Array subclassing framework
   - Method overriding
@@ -709,31 +705,102 @@ Phase 12 focuses on advanced and experimental features:
   - Type hierarchy support
 
 ### 12.3 Broadcasting Enhancements (MEDIUM PRIORITY)
-- **Target**: Advanced broadcasting features
+- **Target**: Complete NumPy's broadcasting features
 - **Features**:
-  - Generalized ufunc broadcasting
-  - Advanced broadcasting rules
-  - Broadcasting optimization
-  - Broadcasting with masks
+  - Complete ufunc broadcasting (matching NumPy)
+  - All broadcasting rules (matching NumPy)
+  - Broadcasting optimization (matching NumPy)
+  - Broadcasting with masks (if NumPy supports)
 
-### 12.4 GPU Array Support (FUTURE)
-- **Target**: GPU operations
+### 12.4 Advanced Memory Layout Optimizations (MEDIUM PRIORITY)
+- **Target**: Match NumPy's memory layout optimizations
 - **Features**:
-  - CuPy compatibility
+  - Memory layout optimization (matching NumPy)
+  - Strided array optimization (matching NumPy)
+  - Memory alignment optimization (matching NumPy)
+
+## Future Enhancements: Beyond NumPy
+
+The following features go beyond NumPy's current capabilities and are marked as future enhancements. These will be implemented after completing all NumPy feature matching (Phases 1-12).
+
+### FE.1 Advanced SIMD Optimizations (FUTURE ENHANCEMENT)
+- **Note**: NumPy uses some SIMD internally, but extensive SIMD optimization is beyond NumPy's scope
+- **Target**: Advanced SIMD optimizations beyond NumPy
+- **Features**:
+  - AVX/AVX2 optimizations for x86_64
+  - SSE optimizations for older x86
+  - NEON optimizations for ARM
+  - Automatic SIMD detection
+  - SIMD-optimized ufuncs
+  - SIMD-optimized reductions
+  - SIMD-optimized element-wise operations
+
+### FE.2 Extensive Parallel Processing (FUTURE ENHANCEMENT)
+- **Note**: NumPy has limited threading; extensive parallel processing is beyond NumPy
+- **Target**: Multi-threaded operations beyond NumPy's capabilities
+- **Features**:
+  - Parallel reduction operations
+  - Parallel element-wise operations
+  - Thread pool management
+  - Work-stealing algorithms
+  - NUMA-aware allocation
+  - Lock-free data structures where applicable
+
+### FE.3 Advanced Cache Optimizations (FUTURE ENHANCEMENT)
+- **Note**: Advanced cache optimizations beyond NumPy's current implementation
+- **Target**: Optimize memory access patterns
+- **Features**:
+  - Block-based algorithms for large arrays
+  - Cache-aware tiling
+  - Memory prefetching
+  - Advanced data layout optimizations
+  - Minimize cache misses
+
+### FE.4 Zero-Copy Operations Enhancement (FUTURE ENHANCEMENT)
+- **Note**: NumPy has views, but enhanced zero-copy is beyond NumPy's current implementation
+- **Target**: Avoid unnecessary data copying
+- **Features**:
+  - Enhanced zero-copy views
+  - Zero-copy slicing
+  - Zero-copy broadcasting
+  - Lazy evaluation where possible
+  - Copy-on-write semantics
+
+### FE.5 JIT Compilation (FUTURE ENHANCEMENT)
+- **Note**: NumPy does not have JIT compilation; this is beyond NumPy
+- **Target**: Just-in-time compilation for hot paths
+- **Features**:
+  - Identify hot code paths
+  - JIT compilation framework
+  - Runtime code generation
+  - Specialized loop kernels
+
+### FE.6 GPU Array Support (FUTURE ENHANCEMENT - BEYOND NUMPY)
+- **Note**: NumPy does NOT have GPU support; this is a future enhancement beyond NumPy
+- **Target**: GPU operations (similar to CuPy)
+- **Features**:
+  - CuPy-compatible API
   - GPU array types
   - GPU memory management
   - GPU kernel execution
   - Multi-GPU support
   - GPU-CPU data transfer
 
-### 12.5 Advanced Memory Layout Optimizations (MEDIUM PRIORITY)
+### FE.7 Advanced Memory Management (FUTURE ENHANCEMENT)
+- **Note**: Advanced memory management beyond NumPy's current implementation
 - **Target**: Better memory layout
 - **Features**:
-  - Automatic layout optimization
-  - Strided array optimization
-  - Memory pool management
-  - Custom allocators
-  - Memory alignment optimization
+  - Automatic layout optimization (beyond NumPy)
+  - Memory pool management (beyond NumPy)
+  - Custom allocators (beyond NumPy)
+
+### FE.8 Async Support (FUTURE ENHANCEMENT - BEYOND NUMPY)
+- **Note**: NumPy does not have async support; this is Rust-specific enhancement
+- **Target**: Async/await support for array operations
+- **Features**:
+  - Async array operations
+  - Async I/O operations
+  - Async iterator support
 
 ## Testing Strategy
 
@@ -837,11 +904,9 @@ Phase 12 focuses on advanced and experimental features:
 - User-defined types
 
 ### Phase 10 (Months 16-18) - PLANNED
-- SIMD optimizations
-- Parallel processing
-- Cache-friendly algorithms
-- Zero-copy operations
-- JIT compilation opportunities
+- Basic performance optimizations (matching NumPy)
+- NumPy-compatible threading
+- Note: Advanced optimizations moved to Future Enhancements section
 
 ### Phase 11 (Months 19-21) - PLANNED
 - Python bindings (PyO3)
@@ -850,11 +915,11 @@ Phase 12 focuses on advanced and experimental features:
 - Benchmark suite
 
 ### Phase 12 (Months 22+) - PLANNED
-- Custom dtype API
-- Array subclassing
-- Broadcasting enhancements
-- GPU array support
-- Advanced memory optimizations
+- Custom dtype API (NumPy feature)
+- Array subclassing (NumPy feature)
+- Broadcasting completion (NumPy feature)
+- Memory layout optimizations (matching NumPy)
+- Note: GPU support moved to Future Enhancements (beyond NumPy)
 
 ## Success Criteria
 
@@ -879,32 +944,48 @@ Phase 12 focuses on advanced and experimental features:
 - ✅ All major C API operations covered
 - ✅ Comprehensive C API test coverage (30 tests)
 
-### Phase 8-12 Goals (Future)
+### Phase 8-12 Goals (Future - NumPy Matching)
 - ⏳ >95% NumPy C API compatibility (text I/O remaining)
-- ⏳ Performance within 2x of NumPy for most operations (Phase 10)
+- ⏳ Performance matching NumPy for core operations (Phase 10)
 - ⏳ Comprehensive test coverage (>1000 tests) (Phase 11)
 - ⏳ Full documentation (Phase 11)
 - ⏳ Production-ready stability (Phase 11-12)
+- ⏳ Complete NumPy feature parity (Phase 12)
+
+### Future Enhancement Goals (Beyond NumPy)
+- 🔮 GPU array support (similar to CuPy)
+- 🔮 Advanced SIMD optimizations (beyond NumPy)
+- 🔮 Extensive parallel processing (beyond NumPy)
+- 🔮 JIT compilation (beyond NumPy)
+- 🔮 Async support (Rust-specific)
 
 ## Known Limitations and Future Considerations
 
-### Current Limitations
+### Current Limitations (NumPy Matching Focus)
 - Limited dtype support (focus on numeric types first) - Phase 9
-- Basic view support (needs enhancement) - Phase 8
+- Basic view support (needs enhancement to match NumPy) - Phase 8
 - No Python bindings yet (Rust-only for now) - Phase 11
 - C API coverage mostly complete (text I/O remaining) - Phase 9
-- No SIMD optimizations yet - Phase 10
 - Memory-mapped arrays use file I/O instead of mmap - Phase 8
+- Performance optimizations needed to match NumPy - Phase 10
 
-### Future Enhancements
-- Python bindings via PyO3
-- SIMD optimizations (AVX, SSE, NEON)
-- GPU array support (CuPy compatibility)
-- Parallel processing support
-- JIT compilation opportunities
-- Custom dtype creation API
-- Array subclassing support
-- Better memory layout optimizations
+### Future Enhancements (NumPy Features - Phases 8-12)
+- Python bindings via PyO3 (Phase 11)
+- Custom dtype creation API (Phase 12 - NumPy has this)
+- Array subclassing support (Phase 12 - NumPy has this)
+- Enhanced views to match NumPy (Phase 8)
+- True memory-mapped arrays (Phase 8)
+- Text file I/O (Phase 9 - NumPy has this)
+- Buffer protocol (Phase 9 - NumPy has this)
+- Einstein summation einsum (Phase 9 - NumPy has this)
+
+### Future Enhancements (Beyond NumPy)
+- Advanced SIMD optimizations (beyond NumPy's current implementation)
+- GPU array support (NumPy does NOT have this - similar to CuPy)
+- Extensive parallel processing (beyond NumPy's threading)
+- JIT compilation (NumPy does NOT have this)
+- Async support (NumPy does NOT have this - Rust-specific)
+- Advanced memory management (beyond NumPy)
 
 ## Contributing Guidelines
 
