@@ -9,7 +9,7 @@ This document tracks the conversion of NumPy's C/C++ core modules to Rust.
 **Overall Progress**: Core functionality complete, enhanced features implemented, additional NumPy features complete, performance optimizations complete, focusing on API completeness
 
 **Completed Phases**: 1-10 (Core, Advanced, Extended, Specialized features, C API, Feature Enhancements, Additional NumPy Features, and Performance Matching)  
-**Remaining Phases**: 11-12 (API completeness, Advanced NumPy features)  
+**Remaining Phases**: 11-13 (API completeness, Advanced NumPy features, Publishing Preparation)  
 **Future Enhancements**: Features beyond NumPy's current capabilities (GPU, advanced SIMD, JIT, async, etc.)
 
 ## Project Focus: NumPy Feature Matching
@@ -397,6 +397,7 @@ Phase 7 focused on completing the NumPy C API compatibility layer by implementin
 - ⏳ **Phase 10**: NumPy performance matching (basic optimizations, threading)
 - ⏳ **Phase 11**: API completeness (Python bindings, documentation, benchmarks)
 - ⏳ **Phase 12**: NumPy advanced features (Custom dtypes, array subclassing, broadcasting completion)
+- ⏳ **Phase 13**: Publishing preparation (crates.io and PyPI publishing)
 - 🔮 **Future Enhancements**: Features beyond NumPy (GPU, advanced SIMD, extensive parallel processing, JIT, async)
 
 ### 6.1 String Operations (COMPLETED)
@@ -773,6 +774,109 @@ Phase 12 focuses on completing remaining NumPy features:
   - Strided array optimization (matching NumPy)
   - Memory alignment optimization (matching NumPy)
 
+## Phase 13: Publishing Preparation
+
+Phase 13 focuses on preparing the Raptors project for public release on package registries:
+
+### 13.1 Rust Crates Publishing (crates.io) (HIGH PRIORITY)
+- **Target**: Publish `raptors-core` to crates.io
+- **Prerequisites**:
+  - ✅ Complete API documentation (rustdoc)
+  - ✅ Comprehensive test suite (currently 377 tests passing)
+  - ✅ Code quality (Clippy passing with 0 warnings)
+  - ⏳ Stable API surface (identify and mark breaking changes)
+  - ⏳ Version numbering strategy (semantic versioning)
+  - ⏳ License file and metadata
+  - ⏳ README.md for crates.io
+  - ⏳ Changelog/CHANGELOG.md
+  - ⏳ Examples in examples/ directory
+  - ⏳ Minimum supported Rust version (MSRV) policy
+  - ⏳ CI/CD for automated publishing
+- **Tasks**:
+  - Review and finalize public API surface
+  - Add `[package]` metadata to Cargo.toml (authors, license, repository, homepage, documentation, keywords, categories)
+  - Create comprehensive README.md for crates.io
+  - Write CHANGELOG.md following Keep a Changelog format
+  - Add examples demonstrating core functionality
+  - Set MSRV in Cargo.toml and document in README
+  - Configure CI/CD (GitHub Actions) for automated testing and publishing
+  - Test crate publishing process (dry-run with `cargo publish --dry-run`)
+  - Publish initial version (0.1.0 or 1.0.0 based on stability assessment)
+  - Set up automated version bumping and release process
+- **Post-Publishing**:
+  - Monitor crates.io downloads and feedback
+  - Set up issue templates for bug reports and feature requests
+  - Create release tags in git repository
+  - Announce release on relevant channels (Reddit, forums, etc.)
+
+### 13.2 Python Package Publishing (PyPI) (HIGH PRIORITY)
+- **Target**: Publish `raptors-python` to PyPI
+- **Prerequisites**:
+  - ✅ Python bindings implemented (PyO3)
+  - ✅ Python test suite (currently 54 tests passing)
+  - ✅ NumPy interoperability (from_numpy, to_numpy)
+  - ⏳ Complete Python API documentation
+  - ⏳ Python package metadata (pyproject.toml)
+  - ⏳ README.md for PyPI
+  - ⏳ License file
+  - ⏳ Python examples
+  - ⏳ Supported Python versions policy
+  - ⏳ CI/CD for automated building and publishing
+- **Tasks**:
+  - Finalize `pyproject.toml` with complete metadata:
+    - Package name, version, description, authors, license
+    - Project URLs (homepage, repository, documentation, changelog)
+    - Keywords, classifiers (PyPI categories)
+    - Dependencies and optional dependencies
+    - Build system configuration (maturin)
+  - Create comprehensive README.md for PyPI (with examples, installation instructions)
+  - Write CHANGELOG.md for Python package
+  - Add Python examples in `raptors-python/examples/`
+  - Document supported Python versions (3.8+, 3.9+, etc.)
+  - Configure CI/CD (GitHub Actions) for:
+    - Building wheels for multiple Python versions (3.8, 3.9, 3.10, 3.11, 3.12)
+    - Building wheels for multiple platforms (Linux, macOS, Windows)
+    - Building source distributions (sdist)
+    - Automated testing before publishing
+    - Automated publishing to PyPI on release tags
+  - Test package building locally (`maturin build`, `maturin build --release`)
+  - Test package installation from local wheel
+  - Test package publishing process (TestPyPI first: `maturin publish --repository testpypi`)
+  - Publish to PyPI (`maturin publish`)
+  - Verify package installation from PyPI (`pip install raptors`)
+- **Post-Publishing**:
+  - Monitor PyPI downloads and feedback
+  - Set up Python-specific issue templates
+  - Create release tags in git repository
+  - Update documentation with PyPI installation instructions
+  - Announce release on Python community channels
+
+### 13.3 Documentation for Publishing (MEDIUM PRIORITY)
+- **Target**: Comprehensive documentation for both Rust and Python packages
+- **Tasks**:
+  - Create installation guides for both crates.io and PyPI
+  - Write quick start guides with code examples
+  - Document API differences from NumPy (if any)
+  - Create migration guide from NumPy to Raptors
+  - Add troubleshooting section
+  - Document platform-specific considerations
+  - Create architecture overview for contributors
+  - Add contribution guidelines
+  - Document versioning and release process
+
+### 13.4 Quality Assurance for Publishing (HIGH PRIORITY)
+- **Target**: Ensure production-ready quality
+- **Tasks**:
+  - Run full test suite on all supported platforms
+  - Perform security audit (cargo audit, safety checks)
+  - Review and fix any remaining clippy warnings
+  - Performance benchmarking vs NumPy
+  - Memory leak testing
+  - Stress testing with large arrays
+  - Compatibility testing with NumPy arrays
+  - Documentation completeness review
+  - API stability review
+
 ## Future Enhancements: Beyond NumPy
 
 The following features go beyond NumPy's current capabilities and are marked as future enhancements. These will be implemented after completing all NumPy feature matching (Phases 1-12).
@@ -997,6 +1101,14 @@ The following features go beyond NumPy's current capabilities and are marked as 
 - Memory layout optimizations (matching NumPy)
 - Note: GPU support moved to Future Enhancements (beyond NumPy)
 
+### Phase 13 (Months 25-27) - PLANNED
+- Rust crate publishing preparation (crates.io)
+- Python package publishing preparation (PyPI)
+- Complete documentation for both packages
+- Quality assurance and testing
+- CI/CD setup for automated publishing
+- Initial public release (0.1.0 or 1.0.0)
+
 ## Success Criteria
 
 ### Phase 4 Goals
@@ -1049,13 +1161,15 @@ The following features go beyond NumPy's current capabilities and are marked as 
 - ✅ All optimizations maintain NumPy compatibility and correctness
 - ✅ **Total: 350 tests passing** (37 Phase 10 tests total: 14 threading + 23 performance, including 21 NumPy-style conversions)
 
-### Phase 10-12 Goals (Future - NumPy Matching)
+### Phase 10-13 Goals (Future - NumPy Matching and Publishing)
 - ⏳ >95% NumPy C API compatibility (text I/O completed in Phase 9)
 - ✅ Performance matching NumPy for core operations (Phase 10 Complete)
-- ⏳ Comprehensive test coverage (currently 350 tests, target >1000 tests) (Phase 11)
+- ⏳ Comprehensive test coverage (currently 377 Rust + 54 Python tests, target >1000 tests) (Phase 11)
 - ⏳ Full documentation (Phase 11)
 - ⏳ Production-ready stability (Phase 11-12)
 - ⏳ Complete NumPy feature parity (Phase 12)
+- ⏳ Published to crates.io (Phase 13)
+- ⏳ Published to PyPI (Phase 13)
 
 ### Future Enhancement Goals (Beyond NumPy)
 - 🔮 GPU array support (similar to CuPy)
