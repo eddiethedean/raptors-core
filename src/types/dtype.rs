@@ -1,0 +1,121 @@
+//! Data type (dtype) implementation
+//!
+//! This module provides dtype functionality, equivalent to NumPy's
+//! dtype system from descriptor.c and related files
+
+use std::fmt;
+
+/// NumPy-compatible type enumeration
+///
+/// This matches NumPy's NPY_TYPES enum from ndarraytypes.h
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NpyType {
+    Bool = 0,
+    Byte,
+    UByte,
+    Short,
+    UShort,
+    Int,
+    UInt,
+    Long,
+    ULong,
+    LongLong,
+    ULongLong,
+    Float,
+    Double,
+    LongDouble,
+    CFloat,
+    CDouble,
+    CLongDouble,
+    Object = 17,
+    String,
+    Unicode,
+    Void,
+    DateTime,
+    Timedelta,
+    Half,
+    Char, // Deprecated
+}
+
+/// Data type descriptor
+///
+/// This represents a NumPy dtype, equivalent to PyArray_Descr
+#[derive(Debug, Clone)]
+pub struct DType {
+    /// The base type
+    type_: NpyType,
+    /// Size in bytes
+    itemsize: usize,
+    /// Alignment requirement
+    align: usize,
+    /// Type name
+    name: String,
+}
+
+impl DType {
+    /// Create a new dtype
+    pub fn new(type_: NpyType) -> Self {
+        let (itemsize, align, name) = match type_ {
+            NpyType::Bool => (1, 1, "bool".to_string()),
+            NpyType::Byte => (1, 1, "int8".to_string()),
+            NpyType::UByte => (1, 1, "uint8".to_string()),
+            NpyType::Short => (2, 2, "int16".to_string()),
+            NpyType::UShort => (2, 2, "uint16".to_string()),
+            NpyType::Int => (4, 4, "int32".to_string()),
+            NpyType::UInt => (4, 4, "uint32".to_string()),
+            NpyType::Long => (std::mem::size_of::<i64>(), 8, "int64".to_string()),
+            NpyType::ULong => (std::mem::size_of::<u64>(), 8, "uint64".to_string()),
+            NpyType::LongLong => (8, 8, "int64".to_string()),
+            NpyType::ULongLong => (8, 8, "uint64".to_string()),
+            NpyType::Float => (4, 4, "float32".to_string()),
+            NpyType::Double => (8, 8, "float64".to_string()),
+            NpyType::LongDouble => (16, 16, "float128".to_string()),
+            NpyType::CFloat => (8, 4, "complex64".to_string()),
+            NpyType::CDouble => (16, 8, "complex128".to_string()),
+            NpyType::CLongDouble => (32, 16, "complex256".to_string()),
+            NpyType::Half => (2, 2, "float16".to_string()),
+            _ => (8, 8, "object".to_string()), // Default for unimplemented types
+        };
+        
+        DType {
+            type_,
+            itemsize,
+            align,
+            name,
+        }
+    }
+    
+    /// Get the itemsize in bytes
+    pub fn itemsize(&self) -> usize {
+        self.itemsize
+    }
+    
+    /// Get the alignment requirement
+    pub fn align(&self) -> usize {
+        self.align
+    }
+    
+    /// Get the type name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    
+    /// Get the base type
+    pub fn type_(&self) -> NpyType {
+        self.type_
+    }
+}
+
+impl fmt::Display for DType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Default for DType {
+    fn default() -> Self {
+        DType::new(NpyType::Double)
+    }
+}
+

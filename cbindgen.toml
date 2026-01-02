@@ -1,0 +1,16 @@
+language = "C"
+header = "/* Generated C header for raptors-core - NumPy C API compatible interface */"
+include_guard = "RAPTORS_CORE_H"
+pragma_once = true
+
+[export]
+include = ["PyArrayObject", "PyArray_*"]
+exclude = ["raptors_*"]
+
+[parse]
+parse_deps = true
+include = ["raptors-core"]
+
+[parse.expand]
+crates = ["raptors-core"]
+
