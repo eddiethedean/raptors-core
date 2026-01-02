@@ -1,0 +1,39 @@
+# PyPI Configuration Example
+#
+# Copy this file to ~/.pypirc and fill in your credentials
+# Or use environment variables: MATURIN_PYPI_TOKEN
+#
+# For security, use API tokens instead of passwords:
+# https://pypi.org/manage/account/token/
+
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+# Option 1: Use API token (recommended)
+# username = __token__
+# password = pypi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Option 2: Use username and password (not recommended)
+# username = your_username
+# password = your_password
+
+[testpypi]
+# Option 1: Use API token (recommended)
+# username = __token__
+# password = pypi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Option 2: Use username and password (not recommended)
+# username = your_username
+# password = your_password
+
+# Usage with maturin:
+# maturin publish --test    # Uses testpypi section
+# maturin publish           # Uses pypi section
+
+# Alternative: Use environment variable
+# export MATURIN_PYPI_TOKEN="pypi-..."
+# maturin publish
+

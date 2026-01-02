@@ -1,0 +1,20 @@
+[package]
+name = "raptors-python"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "raptors"
+crate-type = ["cdylib"]
+
+[dependencies]
+raptors-core = { path = "../raptors-core" }
+pyo3 = { version = "0.27", features = ["extension-module", "num-complex"] }
+numpy = "0.27"
+
+[build-dependencies]
+pyo3-build-config = "0.27"
+
+[dev-dependencies]
+pyo3 = { version = "0.27", features = ["extension-module", "num-complex", "auto-initialize"] }
+

@@ -1,16 +1,23 @@
-# Raptors Core
+# Raptors
 
-A Rust implementation of NumPy's C/C++ core, providing C API compatibility for use as a drop-in replacement.
+A high-performance scientific computing library for Rust, providing NumPy-compatible functionality with Python bindings and a vision for next-generation features.
 
 ## Overview
 
-Raptors Core is a systematic conversion of NumPy's core C/C++ implementation to idiomatic Rust, while maintaining C API compatibility. The project aims to provide the same functionality as NumPy's core, implemented in safe Rust where possible.
+Raptors is a comprehensive scientific computing ecosystem built in Rust, starting with a complete reimplementation of NumPy's core functionality. The project provides:
+
+- **NumPy-Compatible Core**: Full implementation of NumPy's array operations, mathematical functions, and C API
+- **Python Bindings**: Seamless Python integration via PyO3 for NumPy users
+- **Rust-Native API**: Idiomatic Rust APIs for safe, high-performance scientific computing
+- **Future-Ready**: Foundation for next-generation features like GPU support, JIT compilation, and async operations
+
+Raptors aims to be the go-to scientific computing library for Rust while maintaining full compatibility with the NumPy ecosystem, enabling a smooth transition path for Python users and providing a modern, safe foundation for scientific computing.
 
 ## Status
 
-**Phase 7 Complete** - Comprehensive C API compatibility layer implemented!
+**Phase 11 Complete** - Full NumPy compatibility with Python bindings and comprehensive documentation!
 
-The project has completed 7 major phases of development:
+Raptors has completed 11 major phases of development, providing a production-ready NumPy-compatible core with Python integration:
 
 ### Core Features (Phases 1-3)
 - ✅ **Array Core Structure** - Core array object with metadata, flags, and memory layout
@@ -61,52 +68,70 @@ The project has completed 7 major phases of development:
 ## Project Structure
 
 ```
-raptors-core/
-├── src/
-│   ├── array/          # Core array implementation
-│   ├── memory/         # Memory management
-│   ├── types/          # Type system (dtypes)
-│   ├── indexing/       # Indexing and slicing (basic and advanced)
-│   ├── broadcasting/   # Broadcasting operations
-│   ├── shape/          # Shape manipulation
-│   ├── conversion/     # Type conversion and promotion
-│   ├── iterators/      # Array iterators (basic and advanced)
-│   ├── ufunc/          # Universal functions
-│   ├── operations/     # Array operations
-│   ├── concatenation/  # Concatenation and splitting
-│   ├── linalg/         # Linear algebra operations
-│   ├── io/             # File I/O (NPY format)
-│   ├── sorting/        # Sorting and searching
-│   ├── manipulation/   # Array manipulation utilities
-│   ├── statistics/     # Statistical operations
-│   ├── datetime/       # DateTime and Timedelta support
-│   ├── string/         # String array operations
-│   ├── masked/         # Masked array support
-│   ├── structured/     # Structured arrays
-│   ├── dlpack/         # DLPack support
-│   ├── memmap/         # Memory-mapped arrays
-│   ├── ffi/            # C API compatibility layer
-│   │   ├── array_api.rs      # Array property and creation functions
-│   │   ├── conversion.rs     # Array <-> PyArrayObject conversion
-│   │   ├── views.rs          # Array views and copies
-│   │   ├── manipulation.rs   # Array manipulation C API
-│   │   ├── indexing.rs       # Indexing C API
-│   │   ├── concatenation.rs    # Concatenation C API
-│   │   ├── sorting.rs        # Sorting C API
-│   │   ├── linalg.rs         # Linear algebra C API
-│   │   ├── io.rs             # File I/O C API
-│   │   └── operations.rs     # Advanced operations C API
-│   └── utils/          # Utilities
-├── tests/              # Comprehensive test suite (180+ tests)
-├── docs/               # Documentation
-│   └── CONVERSION_ROADMAP.md  # Conversion tracking
+raptors/
+├── raptors-core/       # Rust core library crate
+│   ├── src/
+│   │   ├── array/          # Core array implementation
+│   │   ├── memory/         # Memory management
+│   │   ├── types/          # Type system (dtypes)
+│   │   ├── indexing/       # Indexing and slicing (basic and advanced)
+│   │   ├── broadcasting/   # Broadcasting operations
+│   │   ├── shape/          # Shape manipulation
+│   │   ├── conversion/     # Type conversion and promotion
+│   │   ├── iterators/      # Array iterators (basic and advanced)
+│   │   ├── ufunc/          # Universal functions
+│   │   ├── operations/     # Array operations
+│   │   ├── concatenation/  # Concatenation and splitting
+│   │   ├── linalg/         # Linear algebra operations
+│   │   ├── io/             # File I/O (NPY format)
+│   │   ├── sorting/        # Sorting and searching
+│   │   ├── manipulation/   # Array manipulation utilities
+│   │   ├── statistics/     # Statistical operations
+│   │   ├── datetime/       # DateTime and Timedelta support
+│   │   ├── string/         # String array operations
+│   │   ├── masked/         # Masked array support
+│   │   ├── structured/     # Structured arrays
+│   │   ├── dlpack/         # DLPack support
+│   │   ├── memmap/         # Memory-mapped arrays
+│   │   ├── ffi/            # C API compatibility layer
+│   │   └── utils/          # Utilities
+│   ├── benches/         # Benchmark suite
+│   ├── examples/        # Rust examples
+│   └── tests/           # Comprehensive test suite (350+ tests)
+├── raptors-python/      # Python bindings crate
+│   ├── src/             # Python bindings source
+│   └── examples/        # Python examples
+├── docs/                # Documentation
+│   ├── ARCHITECTURE.md
+│   ├── API_GUIDE.md
+│   ├── CONVERSION_GUIDE.md
+│   ├── PERFORMANCE.md
+│   ├── CONTRIBUTING.md
+│   └── CONVERSION_ROADMAP.md
 └── numpy-reference/    # NumPy repository for reference
 ```
 
 ## Building
 
+### Rust Core Library
+
 ```bash
+# Build the core library
+cargo build -p raptors-core
+
+# Or build everything (workspace)
 cargo build
+```
+
+### Python Bindings
+
+```bash
+# Build Python bindings (requires PyO3 and Python development headers)
+cd raptors-python
+cargo build
+
+# Or use maturin for Python package
+maturin develop
 ```
 
 ## Testing
@@ -209,24 +234,58 @@ let element_ptr = index_array(&array, &indices).unwrap();
 
 See `docs/CONVERSION_ROADMAP.md` for the detailed conversion plan and progress tracking.
 
-**Completed Phases:** 1-7 (Core functionality, Advanced features, Extended features, Specialized features, and C API compatibility)
+**Completed Phases:** 1-11 (Core functionality, Advanced features, Extended features, Specialized features, C API compatibility, Feature enhancements, Additional NumPy features, Performance matching, and API completeness)
 
-**Future Enhancements:**
-- Performance optimizations (SIMD, parallel processing)
-- Additional NumPy C API functions
-- Python bindings (via PyO3)
-- GPU array support
+**Phase 11 Complete** - Python bindings, high-level Rust API, comprehensive documentation, and benchmark suite implemented!
+
+### New in Phase 11:
+- ✅ **Python Bindings** - Full NumPy-compatible Python API via PyO3 with PyPI package support
+- ✅ **High-Level Rust API** - Builder pattern, iterator-based operations, extensibility traits
+- ✅ **Comprehensive Documentation** - Architecture, API guide, conversion guide, performance guide, contributing guide
+- ✅ **Benchmark Suite** - Performance benchmarks for array operations
+- ✅ **Code Examples** - Rust and Python examples
+- ✅ **Python Package** - Complete PyPI package configuration with build and publishing tools
+
+**Phase 12 (In Progress):**
 - Custom dtype creation API
-- Enhanced memory layout optimizations
-- Comprehensive documentation and examples
+- Array subclassing support
+- Advanced broadcasting features
+
+**Future Enhancements (Beyond NumPy):**
+- **GPU Support**: CUDA and OpenCL backends for accelerated computing (similar to CuPy)
+- **JIT Compilation**: Runtime optimization and code generation
+- **Async Operations**: Asynchronous array operations for I/O-bound workloads
+- **Advanced SIMD**: Platform-specific optimizations beyond NumPy's current implementation
+- **Distributed Computing**: Multi-node array operations and distributed memory support
+- **WebAssembly**: Browser-based scientific computing
+
+## Vision
+
+Raptors is more than a NumPy reimplementation—it's a platform for the future of scientific computing:
+
+1. **Safety First**: Leverage Rust's memory safety guarantees for reliable scientific computing
+2. **Performance**: Match and exceed NumPy's performance while providing a foundation for next-generation optimizations
+3. **Interoperability**: Seamless integration with Python, C, and other scientific computing ecosystems
+4. **Extensibility**: Foundation for GPU computing, JIT compilation, and distributed computing
+5. **Modern Design**: Clean APIs, comprehensive documentation, and developer-friendly tooling
 
 ## License
 
 This project is a reimplementation of NumPy's core functionality. Please refer to NumPy's license for compatibility requirements.
+
+## Ecosystem
+
+Raptors is designed to be the foundation for a broader scientific computing ecosystem:
+
+- **raptors-core**: Core array operations and NumPy compatibility
+- **raptors-python**: Python bindings for seamless NumPy integration
+- **Future**: GPU backends, JIT compilation, distributed computing, and more
 
 ## References
 
 - [NumPy Repository](https://github.com/numpy/numpy)
 - [NumPy Documentation](https://numpy.org/doc/)
 - [NumPy C API Documentation](https://numpy.org/doc/stable/reference/c-api/)
+- [PyO3 Documentation](https://pyo3.rs/) - Python bindings framework
+- [Maturin Documentation](https://maturin.rs/) - Python package builder
 

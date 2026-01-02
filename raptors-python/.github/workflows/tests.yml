@@ -1,0 +1,78 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'raptors-python/**'
+      - 'raptors-core/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'raptors-python/**'
+      - 'raptors-core/**'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          # Reduce matrix size
+          - os: windows-latest
+            python-version: "3.7"
+          - os: macos-latest
+            python-version: "3.7"
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Install maturin
+        run: |
+          pip install maturin
+      
+      - name: Install pytest
+        run: |
+          pip install pytest pytest-cov
+      
+      - name: Build Python module
+        working-directory: raptors-python
+        run: |
+          maturin develop
+      
+      - name: Run Rust tests
+        working-directory: raptors-python
+        run: |
+          cargo test --lib
+      
+      - name: Run Python tests
+        working-directory: raptors-python
+        run: |
+          pytest tests/ -v
+      
+      - name: Run Python tests with coverage
+        working-directory: raptors-python
+        run: |
+          pytest tests/ --cov=raptors --cov-report=xml
+        continue-on-error: true
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./raptors-python/coverage.xml
+          flags: python
+        continue-on-error: true
+
