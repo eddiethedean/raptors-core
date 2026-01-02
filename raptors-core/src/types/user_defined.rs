@@ -3,7 +3,7 @@
 //! This module provides support for custom dtypes beyond the built-in NumPy types
 
 use crate::array::ArrayError;
-use crate::types::DType;
+use crate::types::{DType, NpyType};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -29,6 +29,37 @@ pub trait CustomType: Send + Sync {
     
     /// Type name
     fn name(&self) -> &str;
+    
+    /// Convert from another type (default implementation returns error)
+    ///
+    /// This allows custom types to define conversions from built-in types
+    fn convert_from(&self, _source_type: &NpyType, _data: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        Err(CustomTypeError::InvalidType(
+            "Conversion from this type not supported".to_string()
+        ))
+    }
+    
+    /// Convert to another type (default implementation returns error)
+    ///
+    /// This allows custom types to define conversions to built-in types
+    fn convert_to(&self, _target_type: &NpyType, _data: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        Err(CustomTypeError::InvalidType(
+            "Conversion to this type not supported".to_string()
+        ))
+    }
+    
+    /// Perform an optimized operation (optional)
+    ///
+    /// This allows custom types to provide optimized implementations
+    /// for common operations. Returns None if no optimization is available.
+    fn optimized_operation(
+        &self,
+        _op_name: &str,
+        _inputs: &[&[u8]],
+        _output: &mut [u8],
+    ) -> Option<Result<(), CustomTypeError>> {
+        None // Default: no optimization available
+    }
 }
 
 /// Custom type error
@@ -63,8 +94,22 @@ impl From<ArrayError> for CustomTypeError {
 /// Type ID for custom types
 pub type CustomTypeId = u32;
 
+/// Type metadata stored in registry
+#[derive(Debug, Clone)]
+pub struct TypeMetadata {
+    /// Size in bytes
+    pub itemsize: usize,
+    /// Alignment requirement in bytes
+    pub align: usize,
+    /// Type name
+    pub name: String,
+}
+
 /// Global type registry
 static TYPE_REGISTRY: Mutex<Option<TypeRegistry>> = Mutex::new(None);
+
+/// Conversion function type
+pub type ConversionFunction = Box<dyn Fn(&[u8]) -> Result<Vec<u8>, CustomTypeError> + Send + Sync>;
 
 /// Type registry for custom types
 pub struct TypeRegistry {
@@ -72,8 +117,16 @@ pub struct TypeRegistry {
     next_id: CustomTypeId,
     /// Registered types
     types: HashMap<CustomTypeId, Box<dyn CustomType>>,
+    /// Type metadata (itemsize, align, name)
+    metadata: HashMap<CustomTypeId, TypeMetadata>,
     /// Name to ID mapping
     name_to_id: HashMap<String, CustomTypeId>,
+    /// Conversion registry: (source_type_id, target_type_id) -> conversion function
+    conversions: HashMap<(CustomTypeId, CustomTypeId), ConversionFunction>,
+    /// Conversions from built-in types: (NpyType, target_type_id) -> conversion function
+    conversions_from_builtin: HashMap<(NpyType, CustomTypeId), ConversionFunction>,
+    /// Conversions to built-in types: (source_type_id, NpyType) -> conversion function
+    conversions_to_builtin: HashMap<(CustomTypeId, NpyType), ConversionFunction>,
 }
 
 impl TypeRegistry {
@@ -82,7 +135,11 @@ impl TypeRegistry {
         TypeRegistry {
             next_id: 1000, // Start custom types at 1000
             types: HashMap::new(),
+            metadata: HashMap::new(),
             name_to_id: HashMap::new(),
+            conversions: HashMap::new(),
+            conversions_from_builtin: HashMap::new(),
+            conversions_to_builtin: HashMap::new(),
         }
     }
     
@@ -111,10 +168,25 @@ impl TypeRegistry {
             ));
         }
         
+        // Extract and store metadata
+        let metadata = TypeMetadata {
+            itemsize: custom_type.itemsize(),
+            align: custom_type.align(),
+            name: name.clone(),
+        };
+        
         reg.name_to_id.insert(name.clone(), id);
         reg.types.insert(id, Box::new(custom_type));
+        reg.metadata.insert(id, metadata);
         
         Ok(id)
+    }
+    
+    /// Get type metadata by ID
+    pub fn get_metadata_by_id(id: CustomTypeId) -> Option<TypeMetadata> {
+        let registry = TypeRegistry::get();
+        let reg = registry.as_ref().unwrap();
+        reg.metadata.get(&id).cloned()
     }
     
     /// Get a custom type by ID
@@ -131,6 +203,130 @@ impl TypeRegistry {
         let reg = registry.as_ref().unwrap();
         
         reg.name_to_id.get(name).copied()
+    }
+    
+    /// Register a conversion function between two custom types
+    pub fn register_conversion(
+        from_id: CustomTypeId,
+        to_id: CustomTypeId,
+        conversion_fn: ConversionFunction,
+    ) -> Result<(), CustomTypeError> {
+        let mut registry = TypeRegistry::get();
+        let reg = registry.as_mut().unwrap();
+        
+        // Verify both types exist
+        if !reg.types.contains_key(&from_id) {
+            return Err(CustomTypeError::InvalidType(
+                format!("Source type ID {} not found", from_id)
+            ));
+        }
+        if !reg.types.contains_key(&to_id) {
+            return Err(CustomTypeError::InvalidType(
+                format!("Target type ID {} not found", to_id)
+            ));
+        }
+        
+        reg.conversions.insert((from_id, to_id), conversion_fn);
+        Ok(())
+    }
+    
+    /// Register a conversion function from a built-in type to a custom type
+    pub fn register_conversion_from_builtin(
+        from_type: NpyType,
+        to_id: CustomTypeId,
+        conversion_fn: ConversionFunction,
+    ) -> Result<(), CustomTypeError> {
+        let mut registry = TypeRegistry::get();
+        let reg = registry.as_mut().unwrap();
+        
+        // Verify target type exists
+        if !reg.types.contains_key(&to_id) {
+            return Err(CustomTypeError::InvalidType(
+                format!("Target type ID {} not found", to_id)
+            ));
+        }
+        
+        reg.conversions_from_builtin.insert((from_type, to_id), conversion_fn);
+        Ok(())
+    }
+    
+    /// Register a conversion function from a custom type to a built-in type
+    pub fn register_conversion_to_builtin(
+        from_id: CustomTypeId,
+        to_type: NpyType,
+        conversion_fn: ConversionFunction,
+    ) -> Result<(), CustomTypeError> {
+        let mut registry = TypeRegistry::get();
+        let reg = registry.as_mut().unwrap();
+        
+        // Verify source type exists
+        if !reg.types.contains_key(&from_id) {
+            return Err(CustomTypeError::InvalidType(
+                format!("Source type ID {} not found", from_id)
+            ));
+        }
+        
+        reg.conversions_to_builtin.insert((from_id, to_type), conversion_fn);
+        Ok(())
+    }
+    
+    /// Convert data from one custom type to another
+    pub fn convert(
+        from_id: CustomTypeId,
+        to_id: CustomTypeId,
+        data: &[u8],
+    ) -> Result<Vec<u8>, CustomTypeError> {
+        let registry = TypeRegistry::get();
+        let reg = registry.as_ref().unwrap();
+        
+        // Try direct conversion
+        if let Some(conversion_fn) = reg.conversions.get(&(from_id, to_id)) {
+            return conversion_fn(data);
+        }
+        
+        // Try using the type's convert_from/convert_to methods
+        // (This would require getting the type instance, which is currently limited)
+        Err(CustomTypeError::InvalidType(
+            format!("No conversion registered from type {} to type {}", from_id, to_id)
+        ))
+    }
+    
+    /// Convert data from a built-in type to a custom type
+    pub fn convert_from_builtin(
+        from_type: NpyType,
+        to_id: CustomTypeId,
+        data: &[u8],
+    ) -> Result<Vec<u8>, CustomTypeError> {
+        let registry = TypeRegistry::get();
+        let reg = registry.as_ref().unwrap();
+        
+        // Try registered conversion
+        if let Some(conversion_fn) = reg.conversions_from_builtin.get(&(from_type, to_id)) {
+            return conversion_fn(data);
+        }
+        
+        Err(CustomTypeError::InvalidType(
+            format!("No conversion registered from built-in type {:?} to custom type {}", from_type, to_id)
+        ))
+    }
+    
+    /// Convert data from a custom type to a built-in type
+    pub fn convert_to_builtin(
+        from_id: CustomTypeId,
+        to_type: NpyType,
+        data: &[u8],
+    ) -> Result<Vec<u8>, CustomTypeError> {
+        let registry = TypeRegistry::get();
+        let reg = registry.as_ref().unwrap();
+        
+        // Try registered conversion
+        if let Some(conversion_fn) = reg.conversions_to_builtin.get(&(from_id, to_type)) {
+            return conversion_fn(data);
+        }
+        
+        Err(CustomTypeError::InvalidType(
+            format!("No conversion registered from custom type {} to built-in type {:?}", from_id, to_type)
+        ))
     }
 }
 
@@ -150,17 +346,42 @@ pub fn get_custom_type_id(name: &str) -> Option<CustomTypeId> {
 
 /// Create a DType for a custom type
 pub fn create_custom_dtype(
-    _type_id: CustomTypeId,
+    type_id: CustomTypeId,
 ) -> Result<DType, CustomTypeError> {
-    // Get type information from registry
-    // Note: We can't easily get the type back from the registry without better cloning support
-    // For now, we'll create a placeholder dtype
-    // In a full implementation, would retrieve itemsize, align, and name from registry
+    // Get type metadata from registry
+    let metadata = TypeRegistry::get_metadata_by_id(type_id)
+        .ok_or_else(|| CustomTypeError::InvalidType(
+            format!("Custom type with ID {} not found in registry", type_id)
+        ))?;
     
-    // Placeholder - would need to store this info in the registry
-    Err(CustomTypeError::InvalidType(
-        "Custom dtype creation requires type information retrieval from registry".to_string()
+    // Create DType with custom type information
+    Ok(DType::custom(
+        type_id,
+        metadata.itemsize,
+        metadata.align,
+        metadata.name,
     ))
+}
+
+/// Check if a custom type has an optimized operation
+pub fn has_optimized_operation(type_id: CustomTypeId, op_name: &str) -> bool {
+    // This would require accessing the type instance, which is currently limited
+    // For now, return false - full implementation would check the type's optimized_operation
+    let _ = (type_id, op_name);
+    false
+}
+
+/// Execute an optimized operation for a custom type
+pub fn execute_optimized_operation(
+    type_id: CustomTypeId,
+    op_name: &str,
+    inputs: &[&[u8]],
+    output: &mut [u8],
+) -> Option<Result<(), CustomTypeError>> {
+    // This would require accessing the type instance, which is currently limited
+    // For now, return None - full implementation would call the type's optimized_operation
+    let _ = (type_id, op_name, inputs, output);
+    None
 }
 
 

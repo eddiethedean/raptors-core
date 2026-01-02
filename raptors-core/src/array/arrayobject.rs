@@ -647,6 +647,57 @@ impl Array {
         }
     }
     
+    /// Optimize memory layout for better performance
+    ///
+    /// Analyzes the array layout and creates an optimized copy if beneficial.
+    /// Returns the original array if already optimal.
+    pub fn optimize_layout(&self) -> Result<Self, ArrayError> {
+        // If already C-contiguous, no optimization needed
+        if self.is_c_contiguous() {
+            return self.view(self.shape().to_vec(), self.strides().to_vec());
+        }
+        
+        // For strided arrays, create C-contiguous copy for better cache performance
+        // This is a simplified optimization - full version would analyze access patterns
+        if !self.is_c_contiguous() && !self.is_f_contiguous() {
+            return self.as_contiguous(Order::C);
+        }
+        
+        // If F-contiguous but C would be better (depends on access pattern)
+        // For now, keep F-contiguous as-is
+        self.view(self.shape().to_vec(), self.strides().to_vec())
+    }
+    
+    /// Analyze memory layout characteristics
+    ///
+    /// Returns information about the array's memory layout for optimization decisions.
+    pub fn analyze_layout(&self) -> LayoutAnalysis {
+        let is_c_contig = self.is_c_contiguous();
+        let is_f_contig = self.is_f_contiguous();
+        let is_strided = !is_c_contig && !is_f_contig;
+        
+        // Calculate average stride (for strided arrays)
+        let avg_stride = if !self.strides.is_empty() {
+            self.strides.iter().sum::<i64>() as f64 / self.strides.len() as f64
+        } else {
+            0.0
+        };
+        
+        // Check alignment
+        let ptr = self.data as usize;
+        let itemsize = self.itemsize;
+        let is_aligned = ptr.is_multiple_of(itemsize);
+        
+        LayoutAnalysis {
+            is_c_contiguous: is_c_contig,
+            is_f_contiguous: is_f_contig,
+            is_strided,
+            average_stride: avg_stride,
+            is_aligned,
+            itemsize,
+        }
+    }
+    
     /// Fill array with a value
     /// 
     /// # Safety
@@ -926,6 +977,23 @@ impl Drop for Array {
             }
         }
     }
+}
+
+/// Memory layout analysis result
+#[derive(Debug, Clone)]
+pub struct LayoutAnalysis {
+    /// Is C-contiguous
+    pub is_c_contiguous: bool,
+    /// Is F-contiguous
+    pub is_f_contiguous: bool,
+    /// Is strided (neither C nor F contiguous)
+    pub is_strided: bool,
+    /// Average stride in bytes
+    pub average_stride: f64,
+    /// Is memory aligned
+    pub is_aligned: bool,
+    /// Item size in bytes
+    pub itemsize: usize,
 }
 
 /// Compute strides from shape and itemsize

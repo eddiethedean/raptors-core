@@ -57,3 +57,8 @@ include = [
     "README.md",
 ]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::pytest.PytestRemovedIn9Warning",
+]
+

@@ -249,6 +249,18 @@ impl PyArray {
         self.__repr__()
     }
     
+    /// Check if this is an instance of a type (isinstance equivalent)
+    fn isinstance(&self, type_name: String) -> bool {
+        // For now, always return true for "Array" or "PyArray"
+        // Full implementation would check actual type hierarchy
+        type_name == "Array" || type_name == "PyArray" || type_name == "raptors.Array"
+    }
+    
+    /// Get the class name
+    fn __class__(&self) -> String {
+        "PyArray".to_string()
+    }
+    
     /// Addition operator
     fn __add__(&self, other: &PyArray) -> PyResult<Self> {
         let result = add(self.get_inner(), other.get_inner())

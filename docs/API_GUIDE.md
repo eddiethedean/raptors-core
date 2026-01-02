@@ -294,3 +294,108 @@ let result = add(&a, &b)
     .unwrap();
 ```
 
+## Phase 12 Features
+
+### NumPy Compatibility Tests
+
+Raptors includes comprehensive tests based on NumPy's test suite to ensure compatibility:
+
+```rust
+use raptors_core::array::Array;
+use raptors_core::types::{DType, NpyType};
+
+// Test array creation with various shapes (0-d, 1-d, 2-d, 3-d)
+let arr = Array::new(vec![], DType::new(NpyType::Double)).unwrap(); // 0-d
+let arr = Array::new(vec![5], DType::new(NpyType::Double)).unwrap(); // 1-d
+let arr = Array::new(vec![3, 4], DType::new(NpyType::Double)).unwrap(); // 2-d
+
+// Test broadcasting with scalars
+use raptors_core::broadcasting::broadcast_shapes;
+let scalar_shape = vec![];
+let array_shape = vec![3, 4];
+let result = broadcast_shapes(&scalar_shape, &array_shape).unwrap();
+assert_eq!(result, array_shape);
+```
+
+The NumPy compatibility test suite includes 25 tests covering:
+- Array creation edge cases (0-d arrays, empty arrays, single elements)
+- Broadcasting with scalars and leading 1 dimensions
+- Type promotion and dtype operations
+- Array manipulation (reshape, transpose, flatten, squeeze, expand_dims)
+- Array concatenation and stacking
+- Reduction operations (sum, min, max)
+- Array operations with different dtypes
+
+## Phase 12 Features
+
+### Custom Dtype Creation
+
+```rust
+use raptors_core::types::{CustomType, register_custom_type, create_custom_dtype};
+
+// Define a custom type
+struct MyCustomType {
+    itemsize: usize,
+    align: usize,
+    name: String,
+}
+
+impl CustomType for MyCustomType {
+    fn itemsize(&self) -> usize { self.itemsize }
+    fn align(&self) -> usize { self.align }
+    fn to_string(&self) -> String { self.name.clone() }
+    fn from_bytes(&self, bytes: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        Ok(bytes.to_vec())
+    }
+    fn to_bytes(&self, value: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        Ok(value.to_vec())
+    }
+    fn name(&self) -> &str { &self.name }
+}
+
+// Register the custom type
+let type_id = register_custom_type(MyCustomType {
+    itemsize: 16,
+    align: 8,
+    name: "MyType".to_string(),
+}).unwrap();
+
+// Create a dtype for the custom type
+let dtype = create_custom_dtype(type_id).unwrap();
+```
+
+### Array Subclassing
+
+```rust
+use raptors_core::array::{ArrayBase, SubclassableArray, isinstance};
+
+// Create a subclassable array
+let array = Array::new(vec![3, 4], DType::new(NpyType::Double)).unwrap();
+let subclassable = SubclassableArray::new(array, "MyArrayType");
+
+// Check type
+assert!(subclassable.isinstance("MyArrayType"));
+assert!(isinstance(&subclassable, "MyArrayType"));
+```
+
+### Memory Layout Optimization
+
+```rust
+// Analyze layout
+let analysis = array.analyze_layout();
+println!("Is C-contiguous: {}", analysis.is_c_contiguous);
+println!("Is strided: {}", analysis.is_strided);
+println!("Average stride: {}", analysis.average_stride);
+
+// Optimize layout
+let optimized = array.optimize_layout().unwrap();
+```
+
+### Broadcasting Enhancements
+
+Broadcasting now supports:
+- Complete ufunc broadcasting with proper stride calculation
+- All NumPy broadcasting rules including 0-d arrays and scalars
+- Optimized broadcasting with caching and fast paths
+- Broadcasting with masked arrays
+

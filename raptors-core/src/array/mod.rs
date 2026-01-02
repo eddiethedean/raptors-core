@@ -8,10 +8,12 @@ mod creation;
 mod flags;
 mod builder;
 mod iter_ops;
+mod subclassing;
 
 pub use arrayobject::*;
 pub use creation::*;
 pub use flags::*;
 pub use builder::{ArrayBuilder, MemoryOrder};
 pub use iter_ops::ArrayIterOps;
+pub use subclassing::*;
 

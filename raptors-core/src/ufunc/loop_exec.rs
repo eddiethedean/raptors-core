@@ -4,8 +4,8 @@
 //! integrating with iterators and broadcasting
 
 use crate::array::Array;
-use crate::broadcasting::{broadcast_shapes, BroadcastError};
-use crate::types::NpyType;
+use crate::broadcasting::{broadcast_strides, broadcast_shapes_multi, BroadcastError};
+use crate::types::{NpyType, CustomTypeId};
 use crate::ufunc::{Ufunc, UfuncError, LoopFunction, UnaryLoopFunction};
 
 /// Loop execution error
@@ -45,7 +45,8 @@ impl From<BroadcastError> for LoopExecutionError {
 
 /// Execute a binary ufunc loop on arrays
 ///
-/// This applies a ufunc to input arrays, handling broadcasting and type resolution
+/// This applies a ufunc to input arrays, handling broadcasting and type resolution.
+/// Checks for custom type optimizations before falling back to standard execution.
 #[allow(dead_code)]
 pub fn execute_ufunc_loop(
     ufunc: &Ufunc,
@@ -57,24 +58,36 @@ pub fn execute_ufunc_loop(
         return Err(LoopExecutionError::UfuncError(UfuncError::InvalidInputs));
     }
     
-    // For now, simple implementation: assume arrays are same shape or broadcastable
-    // Get input shapes
+    // Check for custom type optimizations
+    // If all inputs and output are custom types, try optimized path
+    let all_custom = inputs.iter().all(|a| a.dtype().custom_type_id().is_some())
+        && output.dtype().custom_type_id().is_some();
+    
+    if all_custom {
+        // Try to use optimized operation for custom types
+        // This is a placeholder - full implementation would check each custom type
+        // for optimized_operation support
+        let _custom_type_ids: Vec<Option<CustomTypeId>> = inputs.iter()
+            .map(|a| a.dtype().custom_type_id())
+            .collect();
+        // For now, fall through to standard execution
+    }
+    
+    // Get input shapes and compute broadcast shape
     let input_shapes: Vec<&[i64]> = inputs.iter().map(|a| a.shape()).collect();
     
-    // Compute broadcast shape
+    // Compute broadcast shape for all inputs
     let broadcast_shape = if input_shapes.len() > 1 {
-        broadcast_shapes(input_shapes[0], input_shapes[1])?
+        broadcast_shapes_multi(&input_shapes)?
     } else {
         input_shapes[0].to_vec()
     };
     
-    // Verify output shape matches
+    // Verify output shape matches broadcast shape
     if output.shape() != broadcast_shape.as_slice() {
         return Err(LoopExecutionError::TypeMismatch);
     }
     
-    // For simplicity, assume arrays are same shape and contiguous
-    // In full implementation, would handle broadcasting and strided iteration
     let count = output.size();
     let itemsize = output.itemsize();
     
@@ -82,24 +95,80 @@ pub fn execute_ufunc_loop(
         return Ok(());
     }
     
-    // Get data pointers
-    let in1_ptr = inputs[0].data_ptr();
-    let in2_ptr = if inputs.len() > 1 { inputs[1].data_ptr() } else { in1_ptr };
-    let out_ptr = output.data_ptr_mut();
+    // Calculate broadcast strides for each input
+    let mut input_broadcast_strides: Vec<Vec<i64>> = Vec::new();
+    for (input, input_shape) in inputs.iter().zip(input_shapes.iter()) {
+        let input_strides = input.strides();
+        let broadcast_strides = broadcast_strides(
+            input_shape,
+            input_strides,
+            &broadcast_shape,
+        )?;
+        input_broadcast_strides.push(broadcast_strides);
+    }
     
-    // Execute loop
-    // Note: loop_fn signature expects: (in1, in2, out, count, stride1, stride2, stride_out)
-    // For contiguous arrays, strides equal itemsize
-    unsafe {
-        loop_fn(
-            in1_ptr,
-            in2_ptr,
-            out_ptr,
-            count,
-            itemsize,
-            itemsize,
-            itemsize,
-        );
+    // Get output strides (clone to avoid borrowing issues)
+    let output_strides = output.strides().to_vec();
+    
+    // Check if all arrays are contiguous (fast path)
+    let all_contiguous = inputs.iter().all(|a| a.is_c_contiguous()) && output.is_c_contiguous();
+    let all_same_shape = input_shapes.iter().all(|s| s == &broadcast_shape.as_slice());
+    
+    if all_contiguous && all_same_shape {
+        // Fast path: all arrays are contiguous and same shape
+        let in1_ptr = inputs[0].data_ptr();
+        let in2_ptr = if inputs.len() > 1 { inputs[1].data_ptr() } else { in1_ptr };
+        let out_ptr = output.data_ptr_mut();
+        
+        unsafe {
+            loop_fn(
+                in1_ptr,
+                in2_ptr,
+                out_ptr,
+                count,
+                itemsize,
+                itemsize,
+                itemsize,
+            );
+        }
+    } else {
+        // General path: handle broadcasting and strided arrays
+        // For now, we'll iterate element by element
+        // This is a simplified implementation - full version would use iterators
+        let in1_ptr = inputs[0].data_ptr();
+        let in2_ptr = if inputs.len() > 1 { inputs[1].data_ptr() } else { in1_ptr };
+        let out_ptr = output.data_ptr_mut();
+        
+        // Use strides from broadcast calculation
+        let stride1 = if !input_broadcast_strides.is_empty() {
+            input_broadcast_strides[0][input_broadcast_strides[0].len() - 1] as usize
+        } else {
+            itemsize
+        };
+        
+        let stride2 = if input_broadcast_strides.len() > 1 {
+            input_broadcast_strides[1][input_broadcast_strides[1].len() - 1] as usize
+        } else {
+            stride1
+        };
+        
+        let stride_out = if !output_strides.is_empty() {
+            output_strides[output_strides.len() - 1] as usize
+        } else {
+            itemsize
+        };
+        
+        unsafe {
+            loop_fn(
+                in1_ptr,
+                in2_ptr,
+                out_ptr,
+                count,
+                stride1,
+                stride2,
+                stride_out,
+            );
+        }
     }
     
     Ok(())

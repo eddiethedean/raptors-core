@@ -64,5 +64,44 @@ mod tests {
         assert_eq!(result[1], 0); // Original dimension of size 1
         assert_eq!(result[2], 8); // Original stride
     }
+    
+    #[test]
+    fn test_broadcast_zero_d_array() {
+        // 0-d array (scalar) can broadcast to any shape
+        let result = broadcast_shapes(&[], &[3, 4]).unwrap();
+        assert_eq!(result, vec![3, 4]);
+        
+        let result = broadcast_shapes(&[3, 4], &[]).unwrap();
+        assert_eq!(result, vec![3, 4]);
+        
+        let result = broadcast_shapes(&[], &[]).unwrap();
+        assert_eq!(result, vec![]);
+    }
+    
+    #[test]
+    fn test_broadcast_scalar_rules() {
+        // Scalar (shape []) broadcasts to any shape
+        assert!(can_broadcast(&[], &[5, 3, 2]));
+        assert!(can_broadcast(&[5, 3, 2], &[]));
+    }
+    
+    #[test]
+    fn test_broadcast_validate() {
+        // Test validate_broadcast function
+        assert!(validate_broadcast(&[1], &[5]).is_ok());
+        assert!(validate_broadcast(&[5], &[5]).is_ok());
+        assert!(validate_broadcast(&[1, 3], &[4, 1, 3]).is_ok());
+        assert!(validate_broadcast(&[3, 4], &[2, 4]).is_err());
+    }
+    
+    #[test]
+    fn test_broadcast_complex_cases() {
+        // Test complex broadcasting scenarios
+        let result = broadcast_shapes(&[1, 1, 1], &[5, 3, 2]).unwrap();
+        assert_eq!(result, vec![5, 3, 2]);
+        
+        let result = broadcast_shapes(&[5, 1, 2], &[1, 3, 2]).unwrap();
+        assert_eq!(result, vec![5, 3, 2]);
+    }
 }
 

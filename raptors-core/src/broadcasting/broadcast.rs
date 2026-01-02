@@ -3,6 +3,18 @@
 //! Broadcasting allows arrays with different shapes to be used together
 //! in operations, following NumPy's broadcasting rules
 
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+/// Type alias for broadcast cache key (shape pair)
+type BroadcastCacheKey = (Vec<i64>, Vec<i64>);
+
+/// Type alias for broadcast cache value (broadcasted shape)
+type BroadcastCacheValue = Vec<i64>;
+
+/// Cache for broadcast shape calculations
+static BROADCAST_CACHE: Mutex<Option<HashMap<BroadcastCacheKey, BroadcastCacheValue>>> = Mutex::new(None);
+
 
 /// Broadcasting error
 #[derive(Debug, Clone)]
@@ -35,45 +47,112 @@ pub fn can_broadcast(shape1: &[i64], shape2: &[i64]) -> bool {
 ///
 /// Returns the resulting shape after broadcasting, or an error if
 /// the shapes are incompatible.
+/// Uses caching for performance when the same shapes are broadcast repeatedly.
 pub fn broadcast_shapes(shape1: &[i64], shape2: &[i64]) -> Result<Vec<i64>, BroadcastError> {
-    let len1 = shape1.len();
-    let len2 = shape2.len();
-    let max_len = len1.max(len2);
-    
-    let mut result = Vec::with_capacity(max_len);
-    
-    for i in 0..max_len {
-        let idx1 = len1.wrapping_sub(max_len - i);
-        let idx2 = len2.wrapping_sub(max_len - i);
-        
-        let dim1 = if idx1 < len1 {
-            shape1[idx1]
-        } else {
-            1
-        };
-        
-        let dim2 = if idx2 < len2 {
-            shape2[idx2]
-        } else {
-            1
-        };
-        
-        // Broadcasting rules:
-        // 1. If dimensions are equal, use that dimension
-        // 2. If one dimension is 1, use the other
-        // 3. Otherwise, incompatible
-        if dim1 == dim2 {
-            result.push(dim1);
-        } else if dim1 == 1 {
-            result.push(dim2);
-        } else if dim2 == 1 {
-            result.push(dim1);
-        } else {
-            return Err(BroadcastError::IncompatibleShapes);
-        }
+    // Fast path: same shapes
+    if shape1 == shape2 {
+        return Ok(shape1.to_vec());
     }
     
-    Ok(result)
+    // Fast path: one is scalar (empty shape)
+    if shape1.is_empty() {
+        return Ok(shape2.to_vec());
+    }
+    if shape2.is_empty() {
+        return Ok(shape1.to_vec());
+    }
+    
+    // Check cache (only for small shapes to avoid memory bloat)
+    if shape1.len() <= 4 && shape2.len() <= 4 {
+        let mut cache = BROADCAST_CACHE.lock().unwrap();
+        if cache.is_none() {
+            *cache = Some(HashMap::new());
+        }
+        let cache_ref = cache.as_mut().unwrap();
+        
+        let key = (shape1.to_vec(), shape2.to_vec());
+        if let Some(cached) = cache_ref.get(&key) {
+            return Ok(cached.clone());
+        }
+        
+        // Compute result
+        let len1 = shape1.len();
+        let len2 = shape2.len();
+        let max_len = len1.max(len2);
+        
+        let mut result = Vec::with_capacity(max_len);
+        
+        for i in 0..max_len {
+            let idx1 = len1.wrapping_sub(max_len - i);
+            let idx2 = len2.wrapping_sub(max_len - i);
+            
+            let dim1 = if idx1 < len1 {
+                shape1[idx1]
+            } else {
+                1
+            };
+            
+            let dim2 = if idx2 < len2 {
+                shape2[idx2]
+            } else {
+                1
+            };
+            
+            // Broadcasting rules:
+            // 1. If dimensions are equal, use that dimension
+            // 2. If one dimension is 1, use the other
+            // 3. Otherwise, incompatible
+            if dim1 == dim2 {
+                result.push(dim1);
+            } else if dim1 == 1 {
+                result.push(dim2);
+            } else if dim2 == 1 {
+                result.push(dim1);
+            } else {
+                return Err(BroadcastError::IncompatibleShapes);
+            }
+        }
+        
+        // Cache result
+        cache_ref.insert(key, result.clone());
+        Ok(result)
+    } else {
+        // For large shapes, don't cache but compute directly
+        let len1 = shape1.len();
+        let len2 = shape2.len();
+        let max_len = len1.max(len2);
+        
+        let mut result = Vec::with_capacity(max_len);
+        
+        for i in 0..max_len {
+            let idx1 = len1.wrapping_sub(max_len - i);
+            let idx2 = len2.wrapping_sub(max_len - i);
+            
+            let dim1 = if idx1 < len1 {
+                shape1[idx1]
+            } else {
+                1
+            };
+            
+            let dim2 = if idx2 < len2 {
+                shape2[idx2]
+            } else {
+                1
+            };
+            
+            if dim1 == dim2 {
+                result.push(dim1);
+            } else if dim1 == 1 {
+                result.push(dim2);
+            } else if dim2 == 1 {
+                result.push(dim1);
+            } else {
+                return Err(BroadcastError::IncompatibleShapes);
+            }
+        }
+        
+        Ok(result)
+    }
 }
 
 /// Compute broadcast shapes for multiple input shapes

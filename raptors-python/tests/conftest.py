@@ -3,6 +3,10 @@
 import pytest
 import sys
 import os
+import warnings
+
+# Filter out pytest deprecation warnings about async fixtures
+warnings.filterwarnings("ignore", category=pytest.PytestRemovedIn9Warning)
 
 # Add the parent directory to the path so we can import raptors
 # This ensures we can import the module even if it's not installed

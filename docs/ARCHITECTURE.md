@@ -47,6 +47,7 @@ The type system matches NumPy's dtype system:
 - **DType**: Type descriptor with metadata (itemsize, alignment, name)
 - **Type Promotion**: Automatic type promotion in operations
 - **Type Casting**: Safe type casting with validation
+- **Custom Types**: User-defined dtype system with registration and conversion hooks (Phase 12)
 
 ### 3. Memory Management (`src/memory/`)
 
@@ -65,6 +66,8 @@ Shape computation and validation for broadcasting:
 - Validates broadcasting compatibility
 - Calculates broadcast strides
 - Supports NumPy's broadcasting rules
+- Broadcasting optimizations with caching and fast paths (Phase 12)
+- Broadcasting support for masked arrays (Phase 12)
 
 ### 5. Universal Functions (`src/ufunc/`)
 
@@ -123,6 +126,25 @@ C API wrapper layer:
 - **C API Functions**: 40+ NumPy-compatible C functions
 - **Conversion**: Array <-> PyArrayObject conversion
 - **Memory Management**: Proper memory handling for C API
+
+### 11. Array Subclassing (`src/array/subclassing.rs`) (Phase 12)
+
+Array subclassing framework:
+
+- **ArrayBase Trait**: Common interface for all array types
+- **SubclassableArray**: Wrapper providing subclassing capabilities
+- **Method Resolution Order (MRO)**: Type hierarchy support
+- **Custom Array Types**: Example implementations (CustomArray)
+- **Type Checking**: isinstance equivalent functionality
+
+### 12. Memory Layout Optimization (Phase 12)
+
+Advanced memory layout optimizations:
+
+- **Layout Analysis**: analyze_layout() method for layout characteristics
+- **Layout Optimization**: optimize_layout() for performance improvements
+- **SIMD Alignment**: Platform-specific alignment (x86_64, ARM)
+- **Alignment Verification**: Utilities for checking memory alignment
 
 ## Memory Layout
 

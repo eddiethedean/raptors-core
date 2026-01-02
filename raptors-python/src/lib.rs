@@ -39,6 +39,10 @@ fn raptors(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(numpy_interop::from_numpy, m)?)?;
     m.add_function(wrap_pyfunction!(numpy_interop::to_numpy, m)?)?;
     
+    // Add custom dtype functions
+    m.add_function(wrap_pyfunction!(dtype::register_custom_dtype, m)?)?;
+    m.add_function(wrap_pyfunction!(dtype::get_custom_dtype_id, m)?)?;
+    
     // Add module-level constants
     dtype::add_dtype_constants(m)?;
     

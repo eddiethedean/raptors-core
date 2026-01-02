@@ -3,7 +3,7 @@
 //! This module provides Python bindings for the DType type.
 
 use pyo3::prelude::*;
-use raptors_core::types::{DType, NpyType};
+use raptors_core::types::{DType, NpyType, register_custom_type, create_custom_dtype, get_custom_type_id, CustomType, CustomTypeError};
 
 /// Python DType class
 #[pyclass]
@@ -82,6 +82,114 @@ impl PyDType {
     fn __str__(&self) -> String {
         self.__repr__()
     }
+    
+    /// Create a custom dtype from a registered custom type ID
+    #[staticmethod]
+    fn from_custom_type_id(type_id: u32) -> PyResult<Self> {
+        let dtype = create_custom_dtype(type_id)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                format!("Failed to create custom dtype: {}", e)
+            ))?;
+        Ok(PyDType { inner: dtype })
+    }
+    
+    /// Create a custom dtype from a registered custom type name
+    #[staticmethod]
+    fn from_custom_type_name(name: String) -> PyResult<Self> {
+        let type_id = get_custom_type_id(&name)
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                format!("Custom type '{}' not found", name)
+            ))?;
+        Self::from_custom_type_id(type_id)
+    }
+    
+    /// Check if this is a custom dtype
+    fn is_custom(&self) -> bool {
+        self.inner.custom_type_id().is_some()
+    }
+    
+    /// Get the custom type ID if this is a custom dtype
+    fn custom_type_id(&self) -> Option<u32> {
+        self.inner.custom_type_id()
+    }
+}
+
+/// Simple custom type implementation for Python
+/// This allows Python users to register custom types with basic information
+struct SimpleCustomType {
+    itemsize: usize,
+    align: usize,
+    name: String,
+}
+
+impl CustomType for SimpleCustomType {
+    fn itemsize(&self) -> usize {
+        self.itemsize
+    }
+    
+    fn align(&self) -> usize {
+        self.align
+    }
+    
+    fn to_string(&self) -> String {
+        self.name.clone()
+    }
+    
+    fn from_bytes(&self, bytes: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        if bytes.len() < self.itemsize {
+            return Err(CustomTypeError::InvalidType(
+                format!("Not enough bytes: expected {}, got {}", self.itemsize, bytes.len())
+            ));
+        }
+        Ok(bytes[..self.itemsize].to_vec())
+    }
+    
+    fn to_bytes(&self, value: &[u8]) -> Result<Vec<u8>, CustomTypeError> {
+        if value.len() < self.itemsize {
+            return Err(CustomTypeError::InvalidType(
+                format!("Not enough bytes: expected {}, got {}", self.itemsize, value.len())
+            ));
+        }
+        Ok(value[..self.itemsize].to_vec())
+    }
+    
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+/// Register a custom type from Python
+///
+/// # Arguments
+/// * `name` - Type name
+/// * `itemsize` - Size in bytes
+/// * `align` - Alignment requirement in bytes
+///
+/// # Returns
+/// The custom type ID assigned to this type
+#[pyfunction]
+pub fn register_custom_dtype(name: String, itemsize: usize, align: usize) -> PyResult<u32> {
+    let custom_type = SimpleCustomType {
+        itemsize,
+        align,
+        name: name.clone(),
+    };
+    
+    let type_id = register_custom_type(custom_type)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Failed to register custom dtype '{}': {}", name, e)
+        ))?;
+    
+    Ok(type_id)
+}
+
+/// Get custom type ID by name
+#[pyfunction]
+pub fn get_custom_dtype_id(name: String) -> PyResult<u32> {
+    get_custom_type_id(&name)
+        .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            format!("Custom type '{}' not found", name)
+        ))
 }
 
 /// Add dtype constants to module
