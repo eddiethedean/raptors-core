@@ -6,10 +6,12 @@ use crate::array::{Array, ArrayError};
 use crate::broadcasting::broadcast_shapes;
 use crate::types::NpyType;
 use crate::conversion::promote_dtypes;
+use crate::ufunc::{create_add_ufunc, create_ufunc_loop};
 
 /// Add two arrays
 ///
 /// Returns a new array with the result of element-wise addition
+/// Supports broadcasting and type promotion
 pub fn add(a1: &Array, a2: &Array) -> Result<Array, ArrayError> {
     // Compute broadcast shape
     let broadcast_shape = broadcast_shapes(a1.shape(), a2.shape())
@@ -22,8 +24,16 @@ pub fn add(a1: &Array, a2: &Array) -> Result<Array, ArrayError> {
     // Create output array
     let mut output = Array::new(broadcast_shape, output_dtype)?;
     
-    // For now, simplified implementation - would use ufunc system
-    // Simple element-wise addition for same-shaped arrays
+    // Use ufunc system for broadcasting support
+    let add_ufunc = create_add_ufunc();
+    let inputs = vec![a1, a2];
+    
+    // Try using ufunc system first (handles broadcasting)
+    if let Ok(()) = create_ufunc_loop(&add_ufunc, &inputs, &mut output) {
+        return Ok(output);
+    }
+    
+    // Fallback to simple same-shape, same-type implementation
     if a1.shape() == a2.shape() && a1.dtype().type_() == a2.dtype().type_() {
         let size = a1.size();
         match a1.dtype().type_() {

@@ -5,11 +5,11 @@ This document tracks the conversion of NumPy's C/C++ core modules to Rust.
 ## Quick Status
 
 **Current Phase**: Phase 12 Complete ✅  
-**Next Phase**: Phase 13 - Publishing Preparation  
+**Next Phase**: Phase 13 - Python API Completeness  
 **Overall Progress**: Core functionality complete, enhanced features implemented, additional NumPy features complete, performance optimizations complete, API completeness achieved, and all NumPy advanced features implemented
 
 **Completed Phases**: 1-12 (Core, Advanced, Extended, Specialized features, C API, Feature Enhancements, Additional NumPy Features, Performance Matching, API Completeness, and NumPy Advanced Features)  
-**Remaining Phases**: 13 (Publishing Preparation)  
+**Remaining Phases**: 13 (Python API Completeness), 14 (Core Feature Enhancements), 15 (Publishing Preparation)  
 **Future Enhancements**: Features beyond NumPy's current capabilities (GPU, advanced SIMD, JIT, async, etc.)
 
 ## Project Focus: NumPy Feature Matching
@@ -1226,7 +1226,23 @@ The following features go beyond NumPy's current capabilities and are marked as 
 - ✅ Python linking: Fixed macOS/pyenv issues
 - ✅ **Total: 421 Rust tests + 54 Python tests = 475+ total tests passing**
 
-### Phase 13 Goals (Future - Publishing Preparation)
+### Phase 13 Goals (Python API Completeness)
+- ⏳ Array operator overloading (`+`, `-`, `*`, `/`)
+- ⏳ Array methods (`reshape()`, `flatten()`, `sum()`, `max()`, `min()`, `tolist()`, `astype()`)
+- ⏳ Negative indexing support
+- ⏳ Ufunc Python API (`raptors.add()`, `raptors.subtract()`, etc.)
+- ⏳ Array Protocol (`__array__`) for NumPy compatibility
+- ⏳ NumPy interoperability (`from_numpy()`, `to_numpy()`)
+
+### Phase 14 Goals (Core Feature Enhancements)
+- ⏳ Proper reduction axis handling
+- ⏳ Enhanced type promotion in ufuncs
+- ⏳ NaN/Infinity handling in ufuncs
+- ⏳ Broadcasting integration in Python API
+- ⏳ Complete structured array field access
+- ⏳ DLPack protocol Python wrapper
+
+### Phase 15 Goals (Publishing Preparation)
 - ⏳ >95% NumPy C API compatibility (text I/O completed in Phase 9)
 - ✅ Performance matching NumPy for core operations (Phase 10 Complete)
 - ✅ Comprehensive test coverage (421 Rust + 54 Python = 475+ total tests) (Phase 12 Complete)

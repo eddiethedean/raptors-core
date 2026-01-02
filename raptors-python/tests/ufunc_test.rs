@@ -8,18 +8,18 @@ fn test_arithmetic_ufuncs() {
         let raptors = PyModule::import(py, "raptors").unwrap();
         let float64 = raptors.getattr("float64").unwrap();
         
-        let a = raptors.call_method1("ones", (vec![3, 3], float64)).unwrap();
-        let b = raptors.call_method1("ones", (vec![3, 3], float64)).unwrap();
+        let a = raptors.call_method1("ones", (vec![3, 3], float64.clone())).unwrap();
+        let b = raptors.call_method1("ones", (vec![3, 3], float64.clone())).unwrap();
         
         // Test add
-        let add_func = raptors.getattr("add").unwrap();
-        let result = add_func.call1((a, b)).unwrap();
+        let add_func = raptors.getattr("add_arrays").unwrap();
+        let result = add_func.call1((a.clone(), b.clone())).unwrap();
         let shape: Vec<i64> = result.getattr("shape").unwrap().extract().unwrap();
         assert_eq!(shape, vec![3, 3]);
         
         // Test subtract
-        let sub_func = raptors.getattr("subtract").unwrap();
-        let result = sub_func.call1((a, b)).unwrap();
+        let sub_func = raptors.getattr("subtract_arrays").unwrap();
+        let result = sub_func.call1((a.clone(), b.clone())).unwrap();
         let shape: Vec<i64> = result.getattr("shape").unwrap().extract().unwrap();
         assert_eq!(shape, vec![3, 3]);
     });
@@ -30,11 +30,11 @@ fn test_math_ufuncs() {
     Python::with_gil(|py| {
         let raptors = PyModule::import(py, "raptors").unwrap();
         let float64 = raptors.getattr("float64").unwrap();
-        let arr = raptors.call_method1("ones", (vec![3, 3], float64)).unwrap();
+        let arr = raptors.call_method1("ones", (vec![3, 3], float64.clone())).unwrap();
         
         // Test sin
         let sin_func = raptors.getattr("sin").unwrap();
-        let result = sin_func.call1((arr,)).unwrap();
+        let result = sin_func.call1((arr.clone(),)).unwrap();
         let shape: Vec<i64> = result.getattr("shape").unwrap().extract().unwrap();
         assert_eq!(shape, vec![3, 3]);
         

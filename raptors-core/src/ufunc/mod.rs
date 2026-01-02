@@ -17,7 +17,7 @@ mod ufunc;
 pub use advanced::*;
 pub use arithmetic::*;
 pub use comparison::*;
-pub use loop_exec::{create_unary_ufunc_loop, LoopExecutionError};
+pub use loop_exec::{create_unary_ufunc_loop, create_ufunc_loop, LoopExecutionError};
 pub use loops::*;
 pub use parallel::{add_parallel, multiply_parallel, should_use_parallel_ufunc};
 pub use reduction::{sum_along_axis, min_along_axis, max_along_axis, mean_along_axis, ReductionError};

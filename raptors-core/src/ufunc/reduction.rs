@@ -294,7 +294,17 @@ pub fn sum_along_axis(array: &Array, axis: Option<usize>) -> Result<Array, Reduc
 /// Mean reduction along axis
 pub fn mean_along_axis(array: &Array, axis: Option<usize>) -> Result<Array, ReductionError> {
     let mut sum_result = sum_along_axis(array, axis)?;
-    let size = array.size() as f64;
+    
+    // Calculate the size along the axis (or total size if axis is None)
+    let size = if let Some(ax) = axis {
+        let shape = array.shape();
+        if ax >= shape.len() {
+            return Err(ReductionError::InvalidAxis);
+        }
+        shape[ax] as f64
+    } else {
+        array.size() as f64
+    };
     
     // Divide sum by size to get mean
     // Simplified - would need proper type handling
@@ -302,7 +312,10 @@ pub fn mean_along_axis(array: &Array, axis: Option<usize>) -> Result<Array, Redu
         NpyType::Double => {
             unsafe {
                 let out_ptr = sum_result.data_ptr_mut() as *mut f64;
-                *out_ptr /= size;
+                let output_size = sum_result.size();
+                for i in 0..output_size {
+                    *out_ptr.add(i) /= size;
+                }
             }
         }
         _ => {

@@ -14,6 +14,8 @@ pub enum StringError {
     InvalidStringData,
     /// Encoding error
     EncodingError(String),
+    /// Index out of bounds
+    IndexOutOfBounds,
 }
 
 impl std::fmt::Display for StringError {
@@ -23,6 +25,7 @@ impl std::fmt::Display for StringError {
             StringError::TypeMismatch => write!(f, "Type mismatch - expected string array"),
             StringError::InvalidStringData => write!(f, "Invalid string data"),
             StringError::EncodingError(msg) => write!(f, "Encoding error: {}", msg),
+            StringError::IndexOutOfBounds => write!(f, "Index out of bounds"),
         }
     }
 }
@@ -88,6 +91,11 @@ pub fn is_string_array(array: &Array) -> bool {
 pub fn get_string(array: &Array, index: usize) -> Result<String, StringError> {
     if !is_string_array(array) {
         return Err(StringError::TypeMismatch);
+    }
+    
+    // Check bounds
+    if index >= array.size() {
+        return Err(StringError::IndexOutOfBounds);
     }
     
     let itemsize = array.itemsize();

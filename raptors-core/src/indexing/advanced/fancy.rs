@@ -25,8 +25,10 @@ pub fn fancy_index_array(array: &Array, indices: &Array) -> Result<Array, IndexE
     
     let array_shape = array.shape();
     let index_size = indices.size();
+    let array_size = array.size() as i64;
     
     // Handle negative indices and validate bounds
+    // For 1D fancy indexing, check against total array size
     let normalized_indices: Vec<i64> = unsafe {
         let index_ptr = indices.data_ptr() as *const i32;
         (0..index_size)
@@ -34,10 +36,10 @@ pub fn fancy_index_array(array: &Array, indices: &Array) -> Result<Array, IndexE
                 let mut idx = *index_ptr.add(i) as i64;
                 // Normalize negative indices
                 if idx < 0 {
-                    idx += array_shape[0];
+                    idx += array_size;
                 }
-                // Validate bounds
-                if idx < 0 || idx >= array_shape[0] {
+                // Validate bounds against total size (for 1D indexing)
+                if idx < 0 || idx >= array_size {
                     return Err(IndexError::OutOfBounds);
                 }
                 Ok(idx)
@@ -58,7 +60,36 @@ pub fn fancy_index_array(array: &Array, indices: &Array) -> Result<Array, IndexE
         let array_strides = array.strides();
         
         for (i, &idx) in normalized_indices.iter().enumerate() {
-            let src_offset = (idx * array_strides[0]) as usize;
+            // For 1D indexing, calculate offset using flat index
+            // This works for both 1D and multi-dimensional arrays when treating as 1D
+            let src_offset = if array.ndim() == 1 {
+                (idx * array_strides[0]) as usize
+            } else {
+                // For multi-dimensional, calculate flat offset using row-major indexing
+                // For a flat index, convert to multi-dimensional coordinates
+                let mut offset = 0i64;
+                let mut remaining = idx;
+                // Iterate from first dimension to last (row-major order)
+                for (dim_idx, (dim_size, &stride)) in array_shape.iter().zip(array_strides.iter()).enumerate() {
+                    let dim_size_i64 = *dim_size;
+                    // Calculate coordinate for this dimension
+                    let coord = if dim_idx == array_shape.len() - 1 {
+                        // Last dimension: remaining is the coordinate
+                        remaining
+                    } else {
+                        // Calculate how many "rows" we've passed
+                        let product_after: i64 = array_shape[(dim_idx + 1)..].iter().product::<i64>();
+                        remaining / product_after
+                    };
+                    offset += coord * stride;
+                    // Update remaining for next dimension
+                    if dim_idx < array_shape.len() - 1 {
+                        let product_after: i64 = array_shape[(dim_idx + 1)..].iter().product::<i64>();
+                        remaining %= product_after;
+                    }
+                }
+                offset as usize
+            };
             let dst_offset = i * itemsize;
             
             std::ptr::copy_nonoverlapping(

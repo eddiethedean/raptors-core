@@ -247,34 +247,87 @@ pub fn split(array: &Array, spec: SplitSpec, axis: usize) -> Result<Vec<Array>, 
     // Create output arrays
     let mut results = Vec::new();
     
-    // For now, simplified implementation: assume 1D arrays
-    // Full implementation would handle multi-dimensional splitting
-    if array.ndim() == 1 {
-        let itemsize = array.itemsize();
-        unsafe {
-            let array_data = array.data_ptr();
+    let itemsize = array.itemsize();
+    let array_strides = array.strides();
+    let axis_stride = array_strides[axis];
+    
+    // Calculate output shape for each split
+    // Remove the axis dimension and replace with split size
+    let mut base_output_shape = shape.to_vec();
+    base_output_shape.remove(axis);
+    
+    unsafe {
+        let array_data = array.data_ptr();
+        
+        for i in 0..(start_indices.len() - 1) {
+            let start = start_indices[i];
+            let end = start_indices[i + 1];
+            let split_size = end - start;
             
-            for i in 0..(start_indices.len() - 1) {
-                let start = start_indices[i];
-                let end = start_indices[i + 1];
-                let size = end - start;
-                
-                let output_shape = vec![size as i64];
-                let mut output = Array::new(output_shape, dtype.clone())?;
-                let output_data = output.data_ptr_mut();
-                
+            // Create output shape: insert split_size at axis position
+            let mut output_shape = base_output_shape.clone();
+            output_shape.insert(axis, split_size as i64);
+            
+            let mut output = Array::new(output_shape.clone(), dtype.clone())?;
+            let output_data = output.data_ptr_mut();
+            let output_strides = output.strides();
+            
+            // Calculate total elements to copy
+            let total_elements: usize = output_shape.iter().product::<i64>() as usize;
+            
+            // Copy data along the axis
+            // For each position in other dimensions, copy the split section along axis
+            if array.ndim() == 1 {
+                // Simple 1D case
                 std::ptr::copy_nonoverlapping(
                     array_data.add(start * itemsize),
                     output_data,
-                    size * itemsize,
+                    split_size * itemsize,
                 );
+            } else {
+                // Multi-dimensional case: iterate over all positions and copy along axis
+                let mut output_offset = 0;
                 
-                results.push(output);
+                // Calculate size of one "row" along the axis
+                let row_size = split_size * axis_stride as usize;
+                
+                // Calculate number of rows (elements in other dimensions)
+                let num_rows = total_elements / split_size;
+                
+                for row in 0..num_rows {
+                    // Calculate input offset for this row at the start position
+                    let row_input_offset = if axis == 0 {
+                        row * (shape[0] as usize) * axis_stride as usize + start * axis_stride as usize
+                    } else {
+                        // For non-zero axis, need to calculate offset more carefully
+                        // Simplified: assume contiguous along axis
+                        let mut offset = 0;
+                        let mut remaining = row;
+                        for (dim, &stride) in shape.iter().zip(array_strides.iter()) {
+                            if dim == &shape[axis] {
+                                // Skip axis dimension
+                                continue;
+                            }
+                            let coord = remaining % (*dim as usize);
+                            offset += coord * stride as usize;
+                            remaining /= *dim as usize;
+                        }
+                        offset + start * axis_stride as usize
+                    };
+                    
+                    // Copy the split section for this row
+                    std::ptr::copy_nonoverlapping(
+                        array_data.add(row_input_offset * itemsize),
+                        output_data.add(output_offset * itemsize),
+                        row_size,
+                    );
+                    
+                    output_offset += split_size;
+                }
             }
+            
+            results.push(output);
         }
-    } else {
-        // Multi-dimensional split not yet implemented
-        return Err(ConcatenationError::ShapeMismatch);
     }
     
     Ok(results)
