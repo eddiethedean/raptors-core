@@ -9,6 +9,7 @@ use pyo3::types::{PyAny, PyList, PyTuple, PySlice};
 use raptors_core::{Array, empty, zeros, ones};
 use raptors_core::types::{DType, NpyType};
 use raptors_core::indexing::{index_array, slice_array, Slice};
+use raptors_core::conversion::convert_array;
 use raptors_core::operations::{add, subtract, multiply, divide};
 use raptors_core::operations::{equal, not_equal, less, greater, less_equal, greater_equal};
 use std::sync::Arc;
@@ -421,30 +422,22 @@ impl PyArray {
     
     /// Convert array to a different dtype
     fn astype(&self, dtype: &PyDType) -> PyResult<Self> {
-        // For now, create a new array with the target dtype and copy data
-        // This is a simplified implementation - full version would handle type conversions
         let target_dtype = dtype.get_inner().clone();
-        let shape = self.get_inner().shape().to_vec();
-        let mut new_array = empty(shape, target_dtype.clone())
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e)))?;
+        let source_dtype = self.get_inner().dtype();
         
-        // Copy data (simplified - assumes compatible types)
-        // Full implementation would use type conversion
-        let src = self.get_inner();
-        let src_size = src.size() * src.itemsize();
-        let dst_size = new_array.size() * new_array.itemsize();
-        let copy_size = src_size.min(dst_size);
-        
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                src.data_ptr(),
-                new_array.data_ptr_mut(),
-                copy_size,
-            );
+        // If types are the same, just return a copy
+        if source_dtype.type_() == target_dtype.type_() {
+            return self.copy();
         }
         
+        // Use proper type conversion
+        let converted_array = convert_array(self.get_inner(), target_dtype)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                format!("Failed to convert array dtype: {}", e)
+            ))?;
+        
         Ok(PyArray {
-            inner: Arc::new(new_array),
+            inner: Arc::new(converted_array),
         })
     }
     
