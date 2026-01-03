@@ -10,8 +10,11 @@ This document tracks the conversion of NumPy's C/C++ core modules to Rust.
 **Overall Progress**: Core functionality complete, enhanced features implemented, additional NumPy features complete, performance optimizations complete, API completeness achieved, and all NumPy advanced features implemented
 
 **Completed Phases**: 1-12 (Core, Advanced, Extended, Specialized features, C API, Feature Enhancements, Additional NumPy Features, Performance Matching, API Completeness, and NumPy Advanced Features)  
-**Remaining Phases**: 13 (Python API Completeness), 14 (Core Feature Enhancements), 15 (Publishing Preparation)  
-**Test Status**: 449+ passing, 21 expected failures (Phase 14 dependencies)  
+**Remaining Phases**: 13 (Python API Completeness - mostly complete), 14 (Core Feature Enhancements), 15 (Publishing Preparation)  
+**Test Status**: 
+- Rust tests: 435+ passing, 4 failures (broadcasting tests - see issue #34)
+- Python tests: 74 passing, 40 failures (many are test issues expecting lists vs tuples - see issue #33)
+- Known Issues: See GitHub issues #33-42 for test failures and missing features (18 open issues)  
 **Future Enhancements**: Features beyond NumPy's current capabilities (GPU, advanced SIMD, JIT, async, etc.)
 
 ## Project Focus: NumPy Feature Matching
@@ -1341,29 +1344,36 @@ The following features go beyond NumPy's current capabilities and are marked as 
 - ✅ Code quality: All warnings fixed (Rust, Clippy, Python)
 - ✅ Python linking: Fixed macOS/pyenv issues
 - ✅ Bug fixes: Fixed 4 test failures (fancy indexing, string bounds, datetime overflow, split)
-- ✅ **Total: 449+ Rust tests + 54 Python tests = 503+ total tests passing**
-- ⚠️ **21 expected failures** (require Phase 14: axis reduction, ufunc broadcasting)
+- ✅ **Total: 535+ tests** (435+ Rust tests passing, 74 Python tests passing)
+- ⚠️ **Known failures**: 4 Rust test failures (broadcasting - issue #34), 40 Python test failures (many are test issues - see issue #33)
+- ⚠️ **Known issues**: See GitHub issues #33-42 for detailed issue tracking
 
 ### Phase 13 Goals (Python API Completeness)
-- ⏳ Array operator overloading (`+`, `-`, `*`, `/`)
-- ⏳ Array methods (`reshape()`, `flatten()`, `sum()`, `max()`, `min()`, `tolist()`, `astype()`)
-- ⏳ Negative indexing support
-- ⏳ Ufunc Python API (`raptors.add()`, `raptors.subtract()`, etc.)
-- ⏳ Array Protocol (`__array__`) for NumPy compatibility
-- ⏳ NumPy interoperability (`from_numpy()`, `to_numpy()`)
+- ✅ Array operator overloading (`+`, `-`, `*`, `/`) - **COMPLETE**
+- ✅ Array methods (`reshape()`, `flatten()`, `sum()`, `max()`, `min()`, `tolist()`, `astype()`) - **COMPLETE**
+- ✅ Negative indexing support - **COMPLETE**
+- ✅ Ufunc Python API (`raptors.add()`, `raptors.subtract()`, etc.) - **COMPLETE**
+- ✅ Array Protocol (`__array__`) for NumPy compatibility - **COMPLETE**
+- ✅ NumPy interoperability (`from_numpy()`, `to_numpy()`) - **COMPLETE**
+- ⏳ Multi-dimensional array slicing (issue #37)
+- ⏳ Multi-dimensional indexing for __setitem__ (issue #38)
+- ⏳ Additional Python bindings (issues #25-32)
 
 ### Phase 14 Goals (Core Feature Enhancements)
-- ⏳ Proper reduction axis handling
+- ⏳ Fix broadcasting test failures (issue #34)
+- ⏳ Proper reduction axis handling (issue #40)
+- ⏳ Complete dtype support for tolist() and indexing (issue #41)
+- ⏳ Complete FFI/C API implementation TODOs (issue #42)
+- ⏳ Fix code quality warnings (issue #39)
 - ⏳ Enhanced type promotion in ufuncs
 - ⏳ NaN/Infinity handling in ufuncs
 - ⏳ Broadcasting integration in Python API
 - ⏳ Complete structured array field access
-- ⏳ DLPack protocol Python wrapper
 
 ### Phase 15 Goals (Publishing Preparation)
 - ⏳ >95% NumPy C API compatibility (text I/O completed in Phase 9)
 - ✅ Performance matching NumPy for core operations (Phase 10 Complete)
-- ✅ Comprehensive test coverage (449+ Rust + 54 Python = 503+ total tests) (Phase 12 Complete)
+- ✅ Comprehensive test coverage (535+ tests: 435+ Rust passing, 74 Python passing) (Phase 12 Complete)
 - ✅ NumPy test porting (470+ tests ported, 449+ passing) (Phase 12 Complete)
 - ✅ NumPy compatibility tests (25 tests) (Phase 12 Complete)
 - ✅ Code quality improvements: All warnings fixed, Clippy clean (Phase 12 Complete)

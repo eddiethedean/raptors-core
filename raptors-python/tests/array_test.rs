@@ -47,11 +47,11 @@ fn test_array_arithmetic() {
         let raptors = PyModule::import(py, "raptors").unwrap();
         let float64 = raptors.getattr("float64").unwrap();
         
-        let a = raptors.call_method1("ones", (vec![2, 2], float64)).unwrap();
+        let a = raptors.call_method1("ones", (vec![2, 2], float64.clone())).unwrap();
         let b = raptors.call_method1("ones", (vec![2, 2], float64)).unwrap();
         
         // Test addition
-        let result = a.call_method1("__add__", (b,)).unwrap();
+        let result = a.call_method1("__add__", (b.clone(),)).unwrap();
         let shape: Vec<i64> = result.getattr("shape").unwrap().extract().unwrap();
         assert_eq!(shape, vec![2, 2]);
         

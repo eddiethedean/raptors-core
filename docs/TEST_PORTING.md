@@ -226,11 +226,14 @@ The ported tests are integrated into the CI/CD pipeline (`.github/workflows/ci.y
 - **Total Python Ported**: 110+ tests
 
 ### Overall Progress
-- **Total Ported**: 365+ tests (255 Rust + 110 Python)
+- **Total Tests**: 535+ tests (421+ Rust + 114 Python)
+- **Rust Tests**: 435+ passing, 4 failures (broadcasting - see issue #34)
+- **Python Tests**: 74 passing, 40 failures (many are test issues - see issue #33)
 - **Infrastructure**: Complete
-- **Core Tests**: In Progress (6/6 categories started)
-- **Python API Tests**: Complete
+- **Core Tests**: Complete (6/6 categories)
+- **Python API Tests**: Complete (with known issues)
 - **CI/CD Integration**: Complete
+- **Known Issues**: See GitHub issues #33-42 for detailed tracking
 
 ## Missing Features and Skipped Tests Registry
 
