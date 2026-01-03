@@ -6,15 +6,34 @@
 
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyList, PyTuple, PySlice};
+use pyo3::ffi;
 use raptors_core::{Array, empty, zeros, ones};
 use raptors_core::types::{DType, NpyType};
 use raptors_core::indexing::{index_array, slice_array, Slice};
 use raptors_core::conversion::convert_array;
 use raptors_core::operations::{add, subtract, multiply, divide};
 use raptors_core::operations::{equal, not_equal, less, greater, less_equal, greater_equal};
+use raptors_core::dlpack::{to_dlpack, delete_dlpack_tensor, DLDeviceType, DLTensor};
 use std::sync::Arc;
+use std::os::raw::c_void;
+use std::ffi::CString;
 use crate::dtype::PyDType;
 use crate::iterators;
+
+/// Destructor function for DLPack capsule
+/// 
+/// This function is called by Python when the PyCapsule is deleted.
+/// It ensures the DLTensor is properly freed.
+/// 
+/// Signature matches PyCapsule_Destructor: void(*destructor)(PyObject*)
+unsafe extern "C" fn dlpack_capsule_destructor(capsule: *mut ffi::PyObject) {
+    // Get the pointer from the capsule
+    let name = CString::new("dltensor").unwrap();
+    let tensor_ptr = ffi::PyCapsule_GetPointer(capsule, name.as_ptr());
+    if !tensor_ptr.is_null() {
+        delete_dlpack_tensor(tensor_ptr as *mut DLTensor);
+    }
+}
 
 /// Python Array class
 #[pyclass]
@@ -609,6 +628,60 @@ impl PyArray {
     #[staticmethod]
     fn from_numpy(py: Python, np_array: &Bound<'_, PyAny>) -> PyResult<Self> {
         crate::numpy_interop::from_numpy(py, np_array)
+    }
+    
+    /// DLPack protocol - export array as DLPack tensor
+    /// 
+    /// Returns a PyCapsule containing a DLTensor pointer.
+    /// The capsule name is "dltensor" per DLPack specification.
+    fn __dlpack__(&self, py: Python, _stream: Option<Py<PyAny>>) -> PyResult<Py<PyAny>> {
+        // Convert array to DLPack tensor
+        let tensor_ptr = unsafe {
+            to_dlpack(self.get_inner())
+                .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("{}", e)))?
+        };
+        
+        // Create capsule name
+        let name = CString::new("dltensor")
+            .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>("Failed to create capsule name"))?;
+        
+        // Create PyCapsule with destructor
+        // The destructor will be called when the capsule is deleted
+        let capsule_ptr = unsafe {
+            ffi::PyCapsule_New(
+                tensor_ptr as *mut c_void,
+                name.as_ptr(),
+                Some(dlpack_capsule_destructor),
+            )
+        };
+        
+        if capsule_ptr.is_null() {
+            // Cleanup on error
+            unsafe {
+                delete_dlpack_tensor(tensor_ptr);
+            }
+            return Err(PyErr::fetch(py));
+        }
+        
+        // Wrap in Py<PyAny>
+        unsafe {
+            Ok(Py::from_owned_ptr(py, capsule_ptr))
+        }
+    }
+    
+    /// DLPack protocol - return device information
+    /// 
+    /// Returns a tuple (device_type, device_id) where:
+    /// - device_type: 1 for CPU
+    /// - device_id: 0 for default device
+    fn __dlpack_device__(&self, py: Python) -> PyResult<Py<PyAny>> {
+        // Currently only CPU is supported
+        let device_type = DLDeviceType::CPU as i32;
+        let device_id = 0i32;
+        
+        // Return as tuple (device_type, device_id)
+        let tuple = PyTuple::new(py, [device_type, device_id])?;
+        Ok(tuple.into())
     }
     
     /// Addition operator
